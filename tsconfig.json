@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "target": "ES6", // Use ES6 or later for modern JavaScript features
+        "module": "Node16", // Use ES6 module system
+        "strict": true, // Enable strict type-checking options
+        "esModuleInterop": true, // Enable compatibility with CommonJS modules
+        "forceConsistentCasingInFileNames": true, // Ensure consistent file naming
+        "skipLibCheck": true, // Skip type checking of declaration files
+        "moduleResolution": "node16", // Resolve modules in Node.js style
+        "resolveJsonModule": true, // Allow importing JSON files
+        "types": ["three"], // Include type definitions for three.js
+        "outDir": "./dist", // Output directory for compiled files
+        "baseUrl": "./", // Base directory for resolving non-relative module names
+        "paths": {
+            "three/webgpu": ["node_modules/three/build/three.webgpu.js"],
+			"three/tsl": ["node_modules/three/build/three.tsl.js"]
+        }
+    },
+    "include": ["src/**/*", "main.ts"], // Include all files in the src directory and index.ts
+    "exclude": ["node_modules", "dist"] // Exclude node_modules and dist directories
+}
