@@ -17,3 +17,4 @@ To-Dos:
 Completed Features:
 - Overall project structure (engine, entities, world, constants, etc.)
 - Learned how to instantiate objects and add textures
+- Drew objects to the screen
