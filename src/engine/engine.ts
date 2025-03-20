@@ -1,13 +1,13 @@
 // src/engine/Engine.ts
 import * as THREE from 'three';
 import { World } from '../world.js';
+import { InputManager } from './input.js';
 import { EntityRegistry } from '../entities/entity-registry.js';
 // import { Player } from '../characters/player.js';
-// import { InputManager } from './input.js';
 // import { ResourceManager } from './resources.js';
 // import { AudioManager } from '../audio/audio.js';
 // import { UI } from '../ui/UI';
-// import { Physics } from './physics.js';
+import { Physics } from './physics.js';
 // import { EventBus } from '../utils/EventBus';
 
 export class Engine {
@@ -22,9 +22,9 @@ export class Engine {
     public clock: THREE.Clock;
 
     //   public resources: ResourceManager;
-    //   public input: InputManager;
+    public input: InputManager;
     //   public audio: AudioManager;
-    //   public physics: Physics;
+    public physics: Physics;
     //   public events: EventBus;
     //   public ui: UI;
 
@@ -47,17 +47,17 @@ export class Engine {
         // Initialize systems
         // this.events = new EventBus();
         // this.resources = new ResourceManager();
-        // this.input = new InputManager(this);
         // this.audio = new AudioManager();
-        // this.physics = new Physics();
         // this.ui = new UI(this);
+
+        this.entityRegistry = new EntityRegistry(this);
+        this.world = new World(this);
+        this.physics = new Physics(this);
+        this.input = new InputManager(this);
 
         // Handle resizing
         window.addEventListener('resize', () => this.onResize());
         document.body.appendChild(this.renderer.domElement);
-
-        this.entityRegistry = new EntityRegistry(this);
-        this.world = new World(this);
     }
 
     async init(): Promise<void> {
@@ -65,11 +65,8 @@ export class Engine {
         // await this.resources.loadEssentialAssets();
 
         // initialize world
+        this.input.init();
         this.world.init();
-
-        // Initialize player
-        // this.player = new Player(this);
-        // this.scene.add(this.player.model);
 
         // Start the animation loop
         this.clock.start();
@@ -79,19 +76,17 @@ export class Engine {
     private update(): void {
         const delta = this.clock.getDelta();
 
-        // Update systems
-        // this.input.update();
+        // update systems
+        this.input.update();
         // this.player.update(delta);
-        if (this.world) {
-            this.world.update(delta);
-        }
-        // this.physics.update();
-        // this.ui.update(delta);
+        this.world.update(delta);
 
-        // Render
+        this.physics.update(delta);
+        // this.ui.update(delta);
+        // render
         this.renderer.render(this.scene, this.camera);
 
-        // Continue loop
+        // continue loop
         requestAnimationFrame(() => this.update());
     }
 

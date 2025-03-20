@@ -1,14 +1,17 @@
 import * as THREE from 'three';
 import { Engine } from './engine/engine.js';
 import { Colours } from './constants/colours.js';
-import { Entity, EntityType } from './entities/entity.js';
 import { EntityRegistry } from './entities/entity-registry.js';
 import { Player } from './entities/player.js';
+import { Tiramysu } from './entities/tiramysu.js';
 
 export class World {   
     private engine: Engine;
     private scene: THREE.Scene;
     private entityRegistry: EntityRegistry;
+    
+    private player!: Player;
+    private tiramysu!: Tiramysu;
 
     constructor(_engine: Engine) {
         this.engine = _engine;
@@ -19,36 +22,26 @@ export class World {
     init(): void {
         this.scene.background = new THREE.Color(Colours.peach); // peach
 
-        // -------------- make a cake --------------
-        const textureLoader = new THREE.TextureLoader();
-        const textureIcing = textureLoader.load('/textures/cake-icing.png');
-        const textureSides = textureLoader.load('/textures/cake-sides.png');
-        const textureBottom = textureLoader.load('/textures/cake-bottom.png');
+        // -------------- initialize entities --------------
+        this.player = new Player();
+        this.entityRegistry.add(this.player);
         
-        const geometry = new THREE.BoxGeometry(3, 1, 3);
-        const material = [
-            new THREE.MeshBasicMaterial({ map: textureSides }), // right
-            new THREE.MeshBasicMaterial({ map: textureSides }), // left
-            new THREE.MeshBasicMaterial({ map: textureIcing }), // top
-            new THREE.MeshBasicMaterial({ map: textureBottom }), // bottom
-            new THREE.MeshBasicMaterial({ map: textureSides }), // front
-            new THREE.MeshBasicMaterial({ map: textureSides }) // back
-        ];
-        const cake = new Entity(new THREE.Mesh(geometry, material), EntityType.Prop);
-        cake.mesh.rotation.x = Math.PI / 6;
-
-        const player = new Player();
-        this.entityRegistry.add(player.entity);
-        
-        this.entityRegistry.add(cake);
+        this.tiramysu = new Tiramysu();
+        this.entityRegistry.add(this.tiramysu);
 
         this.engine.camera.position.z = 10; // move the camera back
+        this.engine.camera.position.y = 5; // move the camera up
+        this.engine.camera.rotation.x = - Math.PI / 6;
     }
 
-    update(delta: number): void {        
-        this.entityRegistry.getEntities().forEach(entity => {
-            // do stuff with entities
-            entity.mesh.rotation.y += delta;
-        });
+    update(delta: number): void {
+        if (this.engine.input.intersects.length > 0) {
+            const intersect = this.engine.input.intersects[0];
+            console.log(intersect.object.uuid + " | " + intersect.object.name + ": " + intersect.object.type);
+        }     
+
+        const playerPos = new THREE.Vector3(this.player.velocity.x, 0, this.player.velocity.z).normalize();
+        this.engine.camera.lookAt(playerPos);
+        this.engine.camera.position.y = this.player.position.y + 5;
     }
 }

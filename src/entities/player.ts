@@ -2,8 +2,7 @@ import * as THREE from 'three';
 import { Entity, EntityType } from "./entity.js";
 import { Colours } from '../constants/colours.js';
 
-export class Player {
-    public entity: Entity;
+export class Player extends Entity {
 
     constructor() {
         const head = new THREE.SphereGeometry(0.5);
@@ -25,6 +24,8 @@ export class Player {
 
         headMesh.position.y = 3;
 
-        this.entity = new Entity(headMesh, EntityType.Player);
+        super(headMesh, EntityType.Player);
+
+        this.name = 'Player';
     }
 }
