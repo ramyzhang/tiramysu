@@ -17,13 +17,15 @@ export class InputManager {
     public init(): void {
         window.addEventListener('pointermove', (e: PointerEvent) => this.onPointerMove(e));
         window.addEventListener('pointerdown', (e: PointerEvent) => this.onPointerDown(e));
+
+        this.raycaster.layers.set(0);
     }
 
     public update(): void {
         this.clicked = this.clickEvent;
         this.clickEvent = false;
         this.raycaster.setFromCamera(this.pointer, this.engine.camera);
-        this.intersects = this.raycaster.intersectObjects(this.engine.scene.children, false);
+        this.intersects = this.raycaster.intersectObjects(this.engine.scene.children, true);
     }
 
     private onPointerMove(event: PointerEvent): void {

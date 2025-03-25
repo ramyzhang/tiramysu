@@ -39,6 +39,7 @@ export class Engine {
             0.1, // near clipping plane
             1000 // far clipping plane
         );
+        this.camera.layers.enableAll();
         this.renderer = new THREE.WebGLRenderer({ canvas });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
 
