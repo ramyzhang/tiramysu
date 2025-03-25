@@ -4,6 +4,7 @@ An experimental project with three.js and Typescript to create a little interact
 
 To-Dos:
 - Player controller
+- A* pathfinding
 - Dialogue system and dialogue UI
 - Event bus
 - Design UI popups for project descriptions & implement them
