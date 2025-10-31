@@ -75,8 +75,6 @@ export class Engine {
             this.isFocused = true;
             this.clock.start();
         });
-        
-        document.body.appendChild(this.renderer.domElement);
     }
 
     async init(): Promise<void> {
