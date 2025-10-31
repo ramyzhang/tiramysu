@@ -1,27 +1,28 @@
 import * as THREE from 'three';
 import { Entity, EntityType } from "./entity.js";
+import { Engine } from '../engine/engine.js';
 
 export class Tiramysu extends Entity {
-    constructor() {
-        const textureLoader = new THREE.TextureLoader();
-        const textureIcing = textureLoader.load('/textures/cake-icing.png');
-        const textureSides = textureLoader.load('/textures/cake-sides.png');
-        const textureBottom = textureLoader.load('/textures/cake-bottom.png');
+    constructor(engine: Engine) {
+        // Try to load the GLB model first
+        let mesh: THREE.Object3D;
         
-        const geometry = new THREE.BoxGeometry(10, 1, 10);
-        const material = [
-            new THREE.MeshBasicMaterial({ map: textureSides }), // right
-            new THREE.MeshBasicMaterial({ map: textureSides }), // left
-            new THREE.MeshBasicMaterial({ map: textureIcing }), // top
-            new THREE.MeshBasicMaterial({ map: textureBottom }), // bottom
-            new THREE.MeshBasicMaterial({ map: textureSides }), // front
-            new THREE.MeshBasicMaterial({ map: textureSides }) // back
-        ];
+        try {
+            const model = engine.resources.getAsset('/models/tiramysu-land-base.glb');
+            if (model) {
+                mesh = model.clone();
+                mesh.scale.setScalar(0.5); // Scale to 10% of original size
+            } else {
+                throw new Error('Model not loaded yet');
+            }
+        } catch (error) {
+            console.error('Failed to load tiramysu-land-base.glb,', error);
+            return;
+        }
 
-        super(new THREE.Mesh(geometry, material), EntityType.Environment);
+        super(mesh as THREE.Mesh, EntityType.Environment);
 
         this.name = 'Tiramysu';
-
         this.static = true;
     }
 }

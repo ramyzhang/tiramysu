@@ -13,7 +13,6 @@ export class EntityRegistry {
     add(entity: Entity): void {
         this.entities.push(entity);
         this.scene.add(entity);
-        this.scene.add(entity.debugCollider); // TODO: remove when ready for PROD
     }
 
     remove(entity: Entity): void {
@@ -21,7 +20,6 @@ export class EntityRegistry {
         if (index > -1) {
             this.entities.splice(index, 1);
             this.scene.remove(entity);
-            this.scene.remove(entity.debugCollider); // TODO: remove when ready for PROD
         }
     }
 

@@ -5,6 +5,8 @@ import { EntityRegistry } from './entities/entity-registry.js';
 import { Player } from './entities/player.js';
 import { Tiramysu } from './entities/tiramysu.js';
 import { DebugLine } from './entities/debugline.js';
+import { CameraSystem } from './systems/camera.js';
+import { DebugUI } from './systems/debug-ui.js';
 
 export class World {   
     private engine: Engine;
@@ -14,6 +16,8 @@ export class World {
     private player!: Player;
     private tiramysu!: Tiramysu;
     private pathLine!: DebugLine;
+    private cameraSystem!: CameraSystem;
+    private debugUI!: DebugUI;
 
     constructor(_engine: Engine) {
         this.engine = _engine;
@@ -23,17 +27,24 @@ export class World {
 
     init(): void {
         this.scene.background = new THREE.Color(Colours.peach); // peach
-
+        
+        // -------------- initialize lighting --------------
+        const ambientLight = new THREE.AmbientLight(0xffffff, 3.0);
+        this.scene.add(ambientLight);
+        
         // -------------- initialize entities --------------
-        this.player = new Player();
+        this.player = new Player(this.engine);
         this.entityRegistry.add(this.player);
         
-        this.tiramysu = new Tiramysu();
+        this.tiramysu = new Tiramysu(this.engine);
         this.entityRegistry.add(this.tiramysu);
 
-        this.engine.camera.position.z = 10; // move the camera back
-        this.engine.camera.position.y = 5; // move the camera up
-        this.engine.camera.rotation.x = - Math.PI / 6;
+        // -------------- initialize camera system --------------
+        this.cameraSystem = new CameraSystem(this.engine);
+        this.cameraSystem.setPlayer(this.player);
+
+        // -------------- initialize debug UI --------------
+        this.debugUI = new DebugUI(this.engine);
 
         // -------------- initialize debugline -----------
         this.pathLine = new DebugLine(new THREE.Vector3(), this.player.position, this.engine);
@@ -52,16 +63,17 @@ export class World {
             const offset = intersect.point.clone().add(new THREE.Vector3(0, 5, 0));
             this.pathLine.updatePoints(intersect.point, offset);
             if (this.engine.input.clicked) {
-                const newDir = intersect.point.clone().sub(this.player.position);
-                this.player.position.add(newDir);
+                this.player.setDestination(intersect.point);
             }
-        }     
+        }
 
-        this.engine.camera.position.x = this.player.position.x;
-        this.engine.camera.position.y = this.player.position.y + 5;
-        this.engine.camera.position.z = this.player.position.z - 10;
+        // Update player movement along navmesh path
+        this.player.updateMovement(delta);
 
-        const playerPos = new THREE.Vector3(this.player.velocity.x, this.player.velocity.z).normalize();
-        this.engine.camera.lookAt(playerPos);
+        // Update camera system
+        this.cameraSystem.update(delta);
+
+        // Update debug UI
+        this.debugUI.update(delta);
     }
 }

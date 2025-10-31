@@ -8,6 +8,8 @@ import { EntityRegistry } from '../entities/entity-registry.js';
 // import { AudioManager } from '../audio/audio.js';
 // import { UI } from '../ui/UI';
 import { Physics } from './physics.js';
+import { ResourceManager } from './resources.js';
+import { NavigationManager } from './navigation.js';
 // import { EventBus } from '../utils/EventBus';
 
 export class Engine {
@@ -20,11 +22,14 @@ export class Engine {
 
     public camera: THREE.PerspectiveCamera;
     public clock: THREE.Clock;
+    
+    private isFocused: boolean = true;
 
-    //   public resources: ResourceManager;
+    public resources: ResourceManager;
     public input: InputManager;
     //   public audio: AudioManager;
     public physics: Physics;
+    public navigation: NavigationManager;
     //   public events: EventBus;
     //   public ui: UI;
 
@@ -47,7 +52,8 @@ export class Engine {
 
         // Initialize systems
         // this.events = new EventBus();
-        // this.resources = new ResourceManager();
+        this.resources = new ResourceManager();
+        this.navigation = new NavigationManager(this);
         // this.audio = new AudioManager();
         // this.ui = new UI(this);
 
@@ -58,14 +64,25 @@ export class Engine {
 
         // Handle resizing
         window.addEventListener('resize', () => this.onResize());
+        
+        // Handle window focus
+        window.addEventListener('blur', () => {
+            this.isFocused = false;
+            this.clock.stop();
+        });
+        
+        window.addEventListener('focus', () => {
+            this.isFocused = true;
+            this.clock.start();
+        });
+        
         document.body.appendChild(this.renderer.domElement);
     }
 
     async init(): Promise<void> {
-        // Load essential resources
-        // await this.resources.loadEssentialAssets();
+        await this.resources.loadEssentialAssets();
+        await this.navigation.loadNavmesh();
 
-        // initialize world
         this.input.init();
         this.world.init();
 
@@ -75,6 +92,12 @@ export class Engine {
     }
 
     private update(): void {
+        if (!this.isFocused) {
+            // Pause updates when window is unfocused, but still render
+            requestAnimationFrame(() => this.update());
+            return;
+        }
+
         const delta = this.clock.getDelta();
 
         // update systems
@@ -84,6 +107,7 @@ export class Engine {
 
         this.physics.update(delta);
         // this.ui.update(delta);
+        
         // render
         this.renderer.render(this.scene, this.camera);
 
