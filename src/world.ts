@@ -48,19 +48,13 @@ export class World {
 
         // -------------- initialize debugline -----------
         this.pathLine = new DebugLine(new THREE.Vector3(), this.player.position, this.engine);
-        const size = 10;
-        const divisions = 10;
-
-        const gridHelper = new THREE.GridHelper( size, divisions );
-        gridHelper.position.y += 0.6;
-        gridHelper.layers.set(2);
-        this.engine.scene.add( gridHelper );
     }
 
     update(delta: number): void {
         if (this.engine.input.intersects.length > 0) {
             const intersect = this.engine.input.intersects[0];
             const offset = intersect.point.clone().add(new THREE.Vector3(0, 5, 0));
+            
             this.pathLine.updatePoints(intersect.point, offset);
             if (this.engine.input.clicked) {
                 this.player.setDestination(intersect.point);

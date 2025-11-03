@@ -100,7 +100,6 @@ export class Engine {
 
         // update systems
         this.input.update();
-        // this.player.update(delta);
         this.world.update(delta);
 
         this.physics.update(delta);

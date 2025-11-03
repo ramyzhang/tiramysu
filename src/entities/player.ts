@@ -6,7 +6,6 @@ import { Engine } from '../engine/engine.js';
 export class Player extends Entity {
     private engine: Engine;
     private currentPath: THREE.Vector3[] = [];
-    private pathIndex: number = 0;
     private moveSpeed: number = 5.0;
     private isMoving: boolean = false;
 
@@ -28,11 +27,11 @@ export class Player extends Entity {
         headMesh.add(bodyMesh);
         bodyMesh.add(leftLegMesh, rightLegMesh);
 
-        headMesh.position.y = 3;
+        headMesh.position.y = 2.5;
 
         super(headMesh, EntityType.Player);
 
-        this.position.set(0, 8.0, -10.0);
+        this.position.set(0, 4.0, -10.0);
         this.engine = _engine;
         this.name = 'Player';
     }
@@ -40,12 +39,8 @@ export class Player extends Entity {
     /**
      * Set a new destination and calculate path
      */
-    setDestination(destination: THREE.Vector3): void {
-        // const startPos = this.engine.navigation.snapToNavMesh(this.position);
-        // const endPos = this.engine.navigation.snapToNavMesh(destination);
-        
+    setDestination(destination: THREE.Vector3): void {        
         this.currentPath = this.engine.navigation.findPath(this.position, destination);
-        this.pathIndex = 0;
         this.isMoving = this.currentPath.length > 0;
                 
         console.log('Pathfinding:', {
@@ -59,30 +54,23 @@ export class Player extends Entity {
      * Update player movement along the current path
      */
     updateMovement(delta: number): void {
-        if (!this.isMoving || this.currentPath.length === 0) {
+        if (!this.isMoving || this.currentPath.length <= 0) {
             return;
         }
 
-        const targetPoint = this.currentPath[this.pathIndex];
+        const targetPoint = this.currentPath[0];
         const direction = targetPoint.clone().sub(this.position);
-        const distance = direction.length();
+        const distance = direction.lengthSq();
 
-        if (distance < 0.1) {
-            this.pathIndex++;
-            if (this.pathIndex >= this.currentPath.length) {
-                this.isMoving = false;
-                this.currentPath = [];
-
-                this.engine.navigation.clearPath();
-                return;
-            }
-        } else {
+        if (distance > 0.5 * 0.5) {
             direction.normalize();
             const moveDistance = this.moveSpeed * delta;
-            const newPosition = this.position.clone().add(direction.multiplyScalar(moveDistance));
-            
-            this.position.copy(newPosition);
+            this.position.add(direction.multiplyScalar(moveDistance));
+        } else {
+            this.currentPath.shift();
         }
+
+        this.engine.navigation.drawPath(this.currentPath);
     }
 
     /**

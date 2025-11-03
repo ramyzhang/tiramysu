@@ -11,7 +11,6 @@ export class Tiramysu extends Entity {
             const model = engine.resources.getAsset('/models/tiramysu-land-base.glb');
             if (model) {
                 mesh = model.clone();
-                mesh.scale.setScalar(0.5); // Scale to 10% of original size
             } else {
                 throw new Error('Model not loaded yet');
             }
