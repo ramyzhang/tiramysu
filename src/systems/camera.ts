@@ -15,7 +15,7 @@ export class CameraSystem extends System {
     
     // Player camera settings
     private cameraAngle = degToRad(30);
-    private cameraDistance = 10;
+    private cameraDistance = 6;
     
     // Free camera settings
     private freeCameraSpeed = 10.0;

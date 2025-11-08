@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Entity, EntityType } from "./entity.js";
 import { Engine } from '../engine/engine.js';
+import { Layers } from '../constants/layers.js';
 
 export class Tiramysu extends Entity {
     constructor(engine: Engine) {
@@ -19,9 +20,12 @@ export class Tiramysu extends Entity {
             return;
         }
 
-        super(mesh as THREE.Mesh, EntityType.Environment);
+        super(mesh as THREE.Mesh, EntityType.Environment, false);
 
         this.name = 'Tiramysu';
         this.static = true;
+        for (const child of this.mesh.children) {
+            child.layers.set(Layers.Environment);
+        }
     }
 }

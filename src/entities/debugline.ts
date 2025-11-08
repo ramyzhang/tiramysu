@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Colours } from '../constants/colours.js';
-import { Engine } from "src/engine/engine.js";
+import { Engine } from 'src/engine/engine.js';
+import { Layers } from '../constants/layers.js';
 
 export class DebugLine {
     engine: Engine;
@@ -26,6 +27,7 @@ export class DebugLine {
         this.line.layers.set(2);
 
         this.engine = _engine;
+        this.line.layers.set(Layers.Ignore);
         this.engine.scene.add(this.line);
     }
 

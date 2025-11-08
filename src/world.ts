@@ -7,6 +7,7 @@ import { Tiramysu } from './entities/tiramysu.js';
 import { DebugLine } from './entities/debugline.js';
 import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
+import { PlayerMovementSystem } from './systems/player-movement.js';
 
 export class World {   
     private engine: Engine;
@@ -18,6 +19,7 @@ export class World {
     private pathLine!: DebugLine;
     private cameraSystem!: CameraSystem;
     private debugUI!: DebugUI;
+    private playerMovementSystem!: PlayerMovementSystem;
 
     constructor(_engine: Engine) {
         this.engine = _engine;
@@ -33,7 +35,7 @@ export class World {
         this.scene.add(ambientLight);
         
         // -------------- initialize entities --------------
-        this.player = new Player(this.engine);
+        this.player = new Player();
         this.entityRegistry.add(this.player);
         
         this.tiramysu = new Tiramysu(this.engine);
@@ -46,23 +48,26 @@ export class World {
         // -------------- initialize debug UI --------------
         this.debugUI = new DebugUI(this.engine);
 
+        // -------------- initialize player movement system --------------
+        this.playerMovementSystem = new PlayerMovementSystem(this.engine);
+
         // -------------- initialize debugline -----------
         this.pathLine = new DebugLine(new THREE.Vector3(), this.player.position, this.engine);
     }
 
     update(delta: number): void {
-        if (this.engine.input.intersects.length > 0) {
-            const intersect = this.engine.input.intersects[0];
+        if (this.engine.input.navmeshIntersects.length > 0) {
+            const intersect = this.engine.input.navmeshIntersects[0];
             const offset = intersect.point.clone().add(new THREE.Vector3(0, 5, 0));
             
             this.pathLine.updatePoints(intersect.point, offset);
             if (this.engine.input.clicked) {
-                this.player.setDestination(intersect.point);
+                // this.player.setDestination(intersect.point);
             }
         }
 
-        // Update player movement along navmesh path
-        this.player.updateMovement(delta);
+        // Update player movement system
+        this.playerMovementSystem.update(delta);
 
         // Update camera system
         this.cameraSystem.update(delta);

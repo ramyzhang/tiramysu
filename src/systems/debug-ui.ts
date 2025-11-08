@@ -1,7 +1,8 @@
 import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import * as THREE from 'three';
-import { Entity, EntityType } from '../entities/entity.js';
+import { Entity } from '../entities/entity.js';
+import { Layers } from '../constants/layers.js';
 
 // Constants for text texture generation
 const TEXT_TEXTURE_CONFIG = {
@@ -238,6 +239,7 @@ export class DebugUI extends System {
             const sprite = this.createEntityLabelSprite(entity);
             
             // Add sprite to scene
+            sprite.layers.set(Layers.Ignore);
             this.engine.scene.add(sprite);
             this.entityLabels.set(entity, sprite);
         });

@@ -1,8 +1,12 @@
 import * as THREE from 'three';
 import { Engine } from './engine.js';
+import { Layers } from '../constants/layers.js';
 
 export class InputManager {
-    public intersects: THREE.Intersection[] = [];
+    public navmeshIntersects: THREE.Intersection[] = [];
+    public interactableIntersects: THREE.Intersection[] = [];
+    public npcIntersects: THREE.Intersection[] = [];
+
     public clicked: boolean = false;
 
     private engine: Engine;
@@ -25,7 +29,15 @@ export class InputManager {
         this.clicked = this.clickEvent;
         this.clickEvent = false;
         this.raycaster.setFromCamera(this.pointer, this.engine.camera);
-        this.intersects = this.raycaster.intersectObjects(this.engine.scene.children, true);
+
+        this.raycaster.layers.set(Layers.Navmesh);
+        this.navmeshIntersects = this.raycaster.intersectObjects(this.engine.scene.children, true);
+
+        this.raycaster.layers.set(Layers.Interactable);
+        this.interactableIntersects = this.raycaster.intersectObjects(this.engine.scene.children, true);
+
+        this.raycaster.layers.set(Layers.NPC);
+        this.npcIntersects = this.raycaster.intersectObjects(this.engine.scene.children, true);
     }
 
     private onPointerMove(event: PointerEvent): void {

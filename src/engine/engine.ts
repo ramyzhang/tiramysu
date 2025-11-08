@@ -3,13 +3,10 @@ import * as THREE from 'three';
 import { World } from '../world.js';
 import { InputManager } from './input.js';
 import { EntityRegistry } from '../entities/entity-registry.js';
-// import { Player } from '../characters/player.js';
-// import { ResourceManager } from './resources.js';
 // import { AudioManager } from '../audio/audio.js';
 // import { UI } from '../ui/UI';
 import { Physics } from './physics.js';
 import { ResourceManager } from './resources.js';
-import { NavigationManager } from './navigation.js';
 // import { EventBus } from '../utils/EventBus';
 
 export class Engine {
@@ -29,11 +26,8 @@ export class Engine {
     public input: InputManager;
     //   public audio: AudioManager;
     public physics: Physics;
-    public navigation: NavigationManager;
     //   public events: EventBus;
     //   public ui: UI;
-
-    //   public player: Player;
 
     constructor(canvas: HTMLCanvasElement) {
         // Initialize core Three.js components
@@ -53,7 +47,6 @@ export class Engine {
         // Initialize systems
         // this.events = new EventBus();
         this.resources = new ResourceManager();
-        this.navigation = new NavigationManager(this);
         // this.audio = new AudioManager();
         // this.ui = new UI(this);
 
@@ -79,7 +72,6 @@ export class Engine {
 
     async init(): Promise<void> {
         await this.resources.loadEssentialAssets();
-        await this.navigation.loadNavmesh();
 
         this.input.init();
         this.world.init();
