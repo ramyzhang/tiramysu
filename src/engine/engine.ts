@@ -1,13 +1,9 @@
 // src/engine/Engine.ts
 import * as THREE from 'three';
 import { World } from '../world.js';
-import { InputManager } from './input.js';
 import { EntityRegistry } from '../entities/entity-registry.js';
-// import { AudioManager } from '../audio/audio.js';
-// import { UI } from '../ui/UI';
 import { Physics } from './physics.js';
 import { ResourceManager } from './resources.js';
-// import { EventBus } from '../utils/EventBus';
 
 export class Engine {
     private renderer: THREE.WebGLRenderer;
@@ -23,11 +19,7 @@ export class Engine {
     private isFocused: boolean = true;
 
     public resources: ResourceManager;
-    public input: InputManager;
-    //   public audio: AudioManager;
     public physics: Physics;
-    //   public events: EventBus;
-    //   public ui: UI;
 
     constructor(canvas: HTMLCanvasElement) {
         // Initialize core Three.js components
@@ -45,15 +37,10 @@ export class Engine {
         this.clock = new THREE.Clock();
 
         // Initialize systems
-        // this.events = new EventBus();
         this.resources = new ResourceManager();
-        // this.audio = new AudioManager();
-        // this.ui = new UI(this);
-
         this.entityRegistry = new EntityRegistry(this);
         this.world = new World(this);
         this.physics = new Physics(this);
-        this.input = new InputManager(this);
 
         // Handle resizing
         window.addEventListener('resize', () => this.onResize());
@@ -73,8 +60,8 @@ export class Engine {
     async init(): Promise<void> {
         await this.resources.loadEssentialAssets();
 
-        this.input.init();
         this.world.init();
+        this.physics.init(); // must be after world.init() so that environment meshes are loaded
 
         // Start the animation loop
         this.clock.start();
@@ -91,11 +78,8 @@ export class Engine {
         const delta = this.clock.getDelta();
 
         // update systems
-        this.input.update();
         this.world.update(delta);
-
         this.physics.update(delta);
-        // this.ui.update(delta);
         
         // render
         this.renderer.render(this.scene, this.camera);

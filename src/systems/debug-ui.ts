@@ -1,346 +1,213 @@
+import * as THREE from 'three';
 import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
-import * as THREE from 'three';
 import { Entity } from '../entities/entity.js';
-import { Layers } from '../constants/layers.js';
+import { updatePointerPosition } from '../utils/utils.js';
+import { Layers } from '../constants.js';
 
-// Constants for text texture generation
-const TEXT_TEXTURE_CONFIG = {
-    FONT_SIZE: 48,
-    PADDING: 20,
-    LINE_HEIGHT_MULTIPLIER: 1.2,
-    BACKGROUND_COLOR: 'rgba(0, 0, 0, 0.7)',
-    TEXT_COLOR: '#ffffff',
-    FONT_FAMILY: 'monospace',
-} as const;
-
-// Constants for sprite scaling
-const SPRITE_CONFIG = {
-    BASE_SCALE: 0.005,
-    Y_OFFSET: 2, // Offset above entity position
-} as const;
-
-// Constants for debug overlay
-const DEBUG_OVERLAY_STYLE = {
-    POSITION: 'fixed',
-    TOP: '10px',
-    LEFT: '10px',
-    COLOR: '#ffffff',
-    FONT_FAMILY: 'monospace',
-    FONT_SIZE: '14px',
-    BACKGROUND_COLOR: 'rgba(0, 0, 0, 0.5)',
-    PADDING: '8px',
-    BORDER_RADIUS: '4px',
-    Z_INDEX: '1000',
-    POINTER_EVENTS: 'none',
-} as const;
-
-// Constants for position formatting
-const POSITION_FORMAT = {
-    DECIMAL_PLACES: 2,
-    DEFAULT_ENTITY_NAME: 'Unnamed Entity',
-} as const;
-
+/**
+ * DebugUI system that allows raycast selection and display of
+ * name, position, and velocity of clicked entity (right mouse button) in a floating window-space div.
+ */
 export class DebugUI extends System {
-    private debugElement: HTMLDivElement | null = null;
-    private entityLabels: Map<Entity, THREE.Sprite> = new Map();
+    private selectedEntity: Entity | null = null;
+    private mouse: THREE.Vector2 = new THREE.Vector2();
+    private raycaster: THREE.Raycaster = new THREE.Raycaster();
+    private infoDiv: HTMLDivElement;
+    private statsDiv: HTMLDivElement;
+    private fpsHistory: number[] = [];
+    private readonly fpsHistorySize: number = 30;
 
     constructor(engine: Engine) {
         super(engine);
-        this.setupDebugUI();
-        this.createWorldPositionLabels();
+
+        // Create floating fixed-position debug div
+        this.infoDiv = document.createElement('div');
+        this.infoDiv.style.position = 'fixed';
+        this.infoDiv.style.right = '20px';
+        this.infoDiv.style.top = '20px';
+        this.infoDiv.style.width = '325px';
+        this.infoDiv.style.background = 'rgba(30,30,40,0.98)';
+        this.infoDiv.style.padding = '20px';
+        this.infoDiv.style.borderRadius = '16px';
+        this.infoDiv.style.fontFamily = 'monospace';
+        this.infoDiv.style.fontSize = '15px';
+        this.infoDiv.style.zIndex = '99999';
+        this.infoDiv.style.color = '#EEE';
+        this.infoDiv.style.boxShadow = '0 0 16px 2px #0006';
+        this.infoDiv.style.pointerEvents = 'auto';
+        this.infoDiv.style.userSelect = 'text';
+        this.infoDiv.style.transition = 'opacity 0.1s';
+        this.infoDiv.style.opacity = '0.93';
+        this.infoDiv.innerText = 'Debug UI\n\nRight-click entity to inspect.';
+        document.body.appendChild(this.infoDiv);
+
+        // Create FPS and memory stats div in top left
+        this.statsDiv = document.createElement('div');
+        this.statsDiv.style.position = 'fixed';
+        this.statsDiv.style.left = '20px';
+        this.statsDiv.style.top = '20px';
+        this.statsDiv.style.background = 'rgba(30,30,40,0.98)';
+        this.statsDiv.style.padding = '12px 16px';
+        this.statsDiv.style.borderRadius = '12px';
+        this.statsDiv.style.fontFamily = 'monospace';
+        this.statsDiv.style.fontSize = '14px';
+        this.statsDiv.style.zIndex = '99999';
+        this.statsDiv.style.color = '#EEE';
+        this.statsDiv.style.boxShadow = '0 0 16px 2px #0006';
+        this.statsDiv.style.pointerEvents = 'none';
+        this.statsDiv.style.userSelect = 'none';
+        this.statsDiv.style.lineHeight = '1.6';
+        document.body.appendChild(this.statsDiv);
+
+        // Register right-click event for raycasting entities
+        window.addEventListener('contextmenu', (e: PointerEvent) => {
+            e.preventDefault();
+            this.handleRightClick(e);
+        });
     }
 
     update(delta: number): void {
-        this.updateCameraPositionText();
-        this.updateEntityLabels();
-    }
+        // Update FPS and memory stats
+        this.updateStats(delta);
 
-    private setupDebugUI(): void {
-        // Create debug overlay element for camera position
-        this.debugElement = document.createElement('div');
-        this.debugElement.id = 'debug-ui';
-        
-        // Apply styles from constants
-        Object.assign(this.debugElement.style, {
-            position: DEBUG_OVERLAY_STYLE.POSITION,
-            top: DEBUG_OVERLAY_STYLE.TOP,
-            left: DEBUG_OVERLAY_STYLE.LEFT,
-            color: DEBUG_OVERLAY_STYLE.COLOR,
-            fontFamily: DEBUG_OVERLAY_STYLE.FONT_FAMILY,
-            fontSize: DEBUG_OVERLAY_STYLE.FONT_SIZE,
-            backgroundColor: DEBUG_OVERLAY_STYLE.BACKGROUND_COLOR,
-            padding: DEBUG_OVERLAY_STYLE.PADDING,
-            borderRadius: DEBUG_OVERLAY_STYLE.BORDER_RADIUS,
-            zIndex: DEBUG_OVERLAY_STYLE.Z_INDEX,
-            pointerEvents: DEBUG_OVERLAY_STYLE.POINTER_EVENTS,
-        });
-        
-        document.body.appendChild(this.debugElement);
+        if (this.selectedEntity) {
+            // Update floating div content with latest live data
+            this.renderEntityInfo(this.selectedEntity);
+        }
     }
 
     /**
-     * Calculates the dimensions needed for the canvas based on text.
+     * Handles right-click event: raycasts and, if an Entity is hit, shows its data in the floating div.
      */
-    private calculateCanvasDimensions(text: string, context: CanvasRenderingContext2D): { width: number; height: number } {
-        const lines = text.split('\n');
-        const lineHeight = TEXT_TEXTURE_CONFIG.FONT_SIZE * TEXT_TEXTURE_CONFIG.LINE_HEIGHT_MULTIPLIER;
-        
-        // Find the maximum width among all lines
-        let textWidth = 0;
-        lines.forEach(line => {
-            const metrics = context.measureText(line);
-            textWidth = Math.max(textWidth, metrics.width);
-        });
-        
-        const totalHeight = lines.length * lineHeight;
-        
-        return {
-            width: textWidth + TEXT_TEXTURE_CONFIG.PADDING * 2,
-            height: totalHeight + TEXT_TEXTURE_CONFIG.PADDING * 2,
-        };
-    }
+    private handleRightClick(event: PointerEvent) {
+        // Calculate mouse coordinates in normalized device coordinates (-1 to +1)
+        const { pointerX, pointerY } = updatePointerPosition(event);
+        this.mouse.x = pointerX;
+        this.mouse.y = pointerY;
 
-    /**
-     * Sets up the canvas context with text styling.
-     */
-    private setupCanvasContext(context: CanvasRenderingContext2D): void {
-        const font = `bold ${TEXT_TEXTURE_CONFIG.FONT_SIZE}px ${TEXT_TEXTURE_CONFIG.FONT_FAMILY}`;
-        context.font = font;
-        context.fillStyle = TEXT_TEXTURE_CONFIG.TEXT_COLOR;
-        context.textAlign = 'left';
-        context.textBaseline = 'top';
-    }
+        this.raycaster.layers.enable(Layers.Player);
+        this.raycaster.layers.enable(Layers.Environment);
+        this.raycaster.setFromCamera(this.mouse, this.engine.camera);
 
-    /**
-     * Draws the text onto the canvas.
-     */
-    private drawTextOnCanvas(context: CanvasRenderingContext2D, text: string): void {
-        const lines = text.split('\n');
-        const lineHeight = TEXT_TEXTURE_CONFIG.FONT_SIZE * TEXT_TEXTURE_CONFIG.LINE_HEIGHT_MULTIPLIER;
-        
-        lines.forEach((line, index) => {
-            context.fillText(
-                line,
-                TEXT_TEXTURE_CONFIG.PADDING,
-                TEXT_TEXTURE_CONFIG.PADDING + index * lineHeight
-            );
-        });
-    }
+        // Gather all registered entities' Object3D
+        const objects: THREE.Object3D[] = this.engine.entityRegistry
+            .getEntities()
+            .map(entity => entity as THREE.Object3D);
 
-    /**
-     * Creates a canvas texture with text for use on sprites.
-     */
-    private createTextTexture(text: string): THREE.CanvasTexture {
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        
-        if (!context) {
-            throw new Error('Could not get canvas context');
+        // Raycast
+        const intersects = this.raycaster.intersectObjects(objects, true);
+
+        let foundEntity: Entity | null = null;
+        if (intersects.length > 0) {
+            // Traverse up the hierarchy to find an Entity
+            for (let i = 0; i < intersects.length; i++) {
+                let obj: THREE.Object3D | null = intersects[i].object;
+                while (obj) {
+                    if (obj instanceof Entity) {
+                        foundEntity = obj as Entity;
+                        break;
+                    }
+                    obj = obj.parent;
+                }
+                if (foundEntity) break;
+            }
         }
 
-        // Setup context for measuring
-        const font = `bold ${TEXT_TEXTURE_CONFIG.FONT_SIZE}px ${TEXT_TEXTURE_CONFIG.FONT_FAMILY}`;
-        context.font = font;
-        
-        // Calculate dimensions
-        const dimensions = this.calculateCanvasDimensions(text, context);
-        canvas.width = dimensions.width;
-        canvas.height = dimensions.height;
-        
-        // Clear and set background
-        context.fillStyle = TEXT_TEXTURE_CONFIG.BACKGROUND_COLOR;
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Setup context for drawing
-        this.setupCanvasContext(context);
-        
-        // Draw text
-        this.drawTextOnCanvas(context, text);
-        
-        // Create texture
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.needsUpdate = true;
-        
-        return texture;
+        this.selectedEntity = foundEntity;
+        this.renderEntityInfo(foundEntity);
     }
 
     /**
-     * Formats entity name and position into display text.
+     * Displays the details of the entity in the floating div.
      */
-    private formatPositionText(entity: Entity): string {
-        const entityName = entity.name || POSITION_FORMAT.DEFAULT_ENTITY_NAME;
-        const pos = entity.position;
-        const precision = POSITION_FORMAT.DECIMAL_PLACES;
-        return `${entityName}\n(${pos.x.toFixed(precision)}, ${pos.y.toFixed(precision)}, ${pos.z.toFixed(precision)})`;
-    }
-
-    /**
-     * Creates a sprite material for entity labels.
-     */
-    private createSpriteMaterial(texture: THREE.CanvasTexture): THREE.SpriteMaterial {
-        return new THREE.SpriteMaterial({
-            map: texture,
-            transparent: true,
-            depthTest: false,
-            depthWrite: false,
-        });
-    }
-
-    /**
-     * Updates sprite scale to match texture dimensions while preserving aspect ratio.
-     */
-    private updateSpriteScale(sprite: THREE.Sprite, texture: THREE.CanvasTexture): void {
-        const textureWidth = texture.image.width;
-        const textureHeight = texture.image.height;
-        sprite.scale.set(
-            textureWidth * SPRITE_CONFIG.BASE_SCALE,
-            textureHeight * SPRITE_CONFIG.BASE_SCALE,
-            1
-        );
-    }
-
-    /**
-     * Positions a sprite above an entity.
-     */
-    private positionSpriteAboveEntity(sprite: THREE.Sprite, entity: Entity): void {
-        sprite.position.copy(entity.position);
-        sprite.position.y += SPRITE_CONFIG.Y_OFFSET;
-    }
-
-    /**
-     * Creates a sprite label for an entity.
-     */
-    private createEntityLabelSprite(entity: Entity): THREE.Sprite {
-        const text = this.formatPositionText(entity);
-        const texture = this.createTextTexture(text);
-        const material = this.createSpriteMaterial(texture);
-        const sprite = new THREE.Sprite(material);
-        
-        this.positionSpriteAboveEntity(sprite, entity);
-        this.updateSpriteScale(sprite, texture);
-        
-        return sprite;
-    }
-
-    /**
-     * Creates world position labels for entities that display the entity's name and position.
-     * This method creates THREE.js sprite labels that are positioned in 3D space above entities.
-     */
-    createWorldPositionLabels(): void {
-        const entities = this.engine.entityRegistry.getEntities();
-        
-        entities.forEach(entity => {
-            // Skip if label already exists
-            if (this.entityLabels.has(entity)) {
-                return;
-            }
-
-            const sprite = this.createEntityLabelSprite(entity);
-            
-            // Add sprite to scene
-            sprite.layers.set(Layers.Ignore);
-            this.engine.scene.add(sprite);
-            this.entityLabels.set(entity, sprite);
-        });
-    }
-
-    /**
-     * Updates the camera position text in the debug overlay.
-     */
-    private updateCameraPositionText(): void {
-        if (!this.debugElement) {
+    private renderEntityInfo(entity: Entity | null) {
+        if (!entity) {
+            this.infoDiv.innerHTML = `<b>Debug UI</b><br><br><span style="opacity:0.6;">Right-click an entity to inspect.<span>`;
             return;
         }
-
-        const camera = this.engine.camera;
-        const pos = camera.position;
-        const precision = POSITION_FORMAT.DECIMAL_PLACES;
-        
-        const x = pos.x.toFixed(precision);
-        const y = pos.y.toFixed(precision);
-        const z = pos.z.toFixed(precision);
-        
-        this.debugElement.textContent = `Camera Position:\nX: ${x}\nY: ${y}\nZ: ${z}`;
+        // Output entity name, position, velocity prettily
+        const position = entity.position;
+        const velocity = (entity as any).velocity || { x: 0, y: 0, z: 0 };
+        this.infoDiv.innerHTML = `
+            <b>Debug UI</b>
+            <hr style="margin:10px 0 10px 0; border-color:#444B;">
+            <b>Name:</b> <span style="color:#ffcd94">${entity.name || 'Unnamed Entity'}</span><br>
+            
+            <b>Position:</b>
+            <pre style="margin-left:12px;margin-top:3px;margin-bottom:3px;">
+x: <span style="color:#7fe3ff">${position.x.toFixed(2)}</span>  
+y: <span style="color:#7fe3ff">${position.y.toFixed(2)}</span>  
+z: <span style="color:#7fe3ff">${position.z.toFixed(2)}</span>  
+            </pre>
+            <b>Velocity:</b>
+            <pre style="margin-left:12px;margin-top:3px;margin-bottom:0;">
+x: <span style="color:#ffa9aa">${velocity.x?.toFixed?.(2) ?? '0.00'}</span>  
+y: <span style="color:#ffa9aa">${velocity.y?.toFixed?.(2) ?? '0.00'}</span>  
+z: <span style="color:#ffa9aa">${velocity.z?.toFixed?.(2) ?? '0.00'}</span>  
+            </pre>
+        `.replace(/^\s{12}/gm, ''); // Remove left spaces
     }
 
     /**
-     * Updates a single entity label sprite.
+     * Updates and displays FPS and memory usage in the top left corner.
      */
-    private updateEntityLabel(entity: Entity, sprite: THREE.Sprite): void {
-        // Update sprite position to follow entity
-        this.positionSpriteAboveEntity(sprite, entity);
-
-        // Make sprite face camera (billboard behavior)
-        sprite.lookAt(this.engine.camera.position);
-
-        // Update texture with current position
-        const text = this.formatPositionText(entity);
+    private updateStats(delta: number): void {
+        // Calculate FPS from delta time
+        const fps = delta > 0 ? 1 / delta : 0;
         
-        // Dispose old texture
-        if (sprite.material instanceof THREE.SpriteMaterial && sprite.material.map) {
-            sprite.material.map.dispose();
+        // Add to history for smoothing
+        this.fpsHistory.push(fps);
+        if (this.fpsHistory.length > this.fpsHistorySize) {
+            this.fpsHistory.shift();
         }
         
-        // Create new texture with updated text
-        const newTexture = this.createTextTexture(text);
-        if (sprite.material instanceof THREE.SpriteMaterial) {
-            sprite.material.map = newTexture;
-            sprite.material.needsUpdate = true;
-            this.updateSpriteScale(sprite, newTexture);
-        }
+        // Calculate average FPS
+        const avgFps = this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length;
+        
+        // Update stats div
+        this.statsDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: #7fe3ff;">FPS:</span>
+                <span style="color: ${avgFps >= 55 ? '#4ade80' : avgFps >= 30 ? '#fbbf24' : '#f87171'}; font-weight: bold;">
+                    ${Math.round(avgFps)}
+                </span>
+            </div>
+        `;
     }
 
     /**
-     * Disposes of a sprite and its associated resources.
+     * Gets memory usage information from the Performance API.
      */
-    private disposeSprite(sprite: THREE.Sprite): void {
-        if (sprite.material instanceof THREE.SpriteMaterial && sprite.material.map) {
-            sprite.material.map.dispose();
+    private getMemoryInfo(): string {
+        // Check for performance.memory (Chrome/Edge)
+        const perfMemory = (performance as any).memory;
+        if (perfMemory) {
+            const used = perfMemory.usedJSHeapSize;
+            const total = perfMemory.totalJSHeapSize;
+            const limit = perfMemory.jsHeapSizeLimit;
+            
+            const formatBytes = (bytes: number): string => {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+                return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+            };
+            
+            return `${formatBytes(used)} / ${formatBytes(total)}`;
         }
-        sprite.material.dispose();
-        this.engine.scene.remove(sprite);
-    }
-
-    /**
-     * Removes labels for entities that no longer exist in the registry.
-     */
-    private cleanupRemovedEntityLabels(currentEntities: Set<Entity>): void {
-        for (const [entity, sprite] of this.entityLabels.entries()) {
-            if (!currentEntities.has(entity)) {
-                this.disposeSprite(sprite);
-                this.entityLabels.delete(entity);
-            }
-        }
-    }
-
-    private updateEntityLabels(): void {
-        const entities = this.engine.entityRegistry.getEntities();
-        const currentEntities = new Set(entities);
         
-        entities.forEach(entity => {
-            const sprite = this.entityLabels.get(entity);
-            if (!sprite) {
-                return;
-            }
-
-            this.updateEntityLabel(entity, sprite);
-        });
-
-        this.cleanupRemovedEntityLabels(currentEntities);
+        // Fallback if memory API is not available
+        return 'N/A';
     }
 
     dispose(): void {
-        if (this.debugElement) {
-            document.body.removeChild(this.debugElement);
-            this.debugElement = null;
+        this.selectedEntity = null;
+        if (this.infoDiv && this.infoDiv.parentElement) {
+            this.infoDiv.parentElement.removeChild(this.infoDiv);
         }
-
-        // Remove all entity labels and dispose resources
-        this.entityLabels.forEach(sprite => {
-            this.disposeSprite(sprite);
-        });
-        this.entityLabels.clear();
+        if (this.statsDiv && this.statsDiv.parentElement) {
+            this.statsDiv.parentElement.removeChild(this.statsDiv);
+        }
     }
 }
-

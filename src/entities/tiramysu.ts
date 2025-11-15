@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+import { MeshBVH, StaticGeometryGenerator } from 'three-mesh-bvh';
+
 import { Entity, EntityType } from "./entity.js";
 import { Engine } from '../engine/engine.js';
-import { Layers } from '../constants/layers.js';
+import { Layers, Colours } from '../constants.js';
 
 export class Tiramysu extends Entity {
     constructor(engine: Engine) {
@@ -20,11 +22,20 @@ export class Tiramysu extends Entity {
             return;
         }
 
-        super(mesh as THREE.Mesh, EntityType.Environment, false);
+        const staticGenerator = new StaticGeometryGenerator(mesh);
+        staticGenerator.attributes = [ 'position' ];
+        const mergedGeometry = staticGenerator.generate();
+        mergedGeometry.boundsTree = new MeshBVH(mergedGeometry);
+
+        super(mesh as THREE.Mesh, EntityType.Environment);
+
+        this.collider = new THREE.Mesh(mergedGeometry);
+        (this.collider as THREE.Mesh).material = new THREE.MeshBasicMaterial({ color: Colours.rose, wireframe: true });
+        this.add(this.collider);
 
         this.name = 'Tiramysu';
         this.static = true;
-        for (const child of this.mesh.children) {
+        for (const child of this.children) {
             child.layers.set(Layers.Environment);
         }
     }

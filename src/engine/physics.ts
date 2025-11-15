@@ -1,124 +1,112 @@
 import * as THREE from 'three';
-import { EntityRegistry } from '../entities/entity-registry.js';
-import { Engine } from './engine.js';
-import { Entity } from 'src/entities/entity.js';
-import { Layers } from '../constants/layers.js';
 
-const MAX_RAYCAST_DISTANCE: number = 10;
+import { Engine } from './engine.js';
+import { Entity, EntityType } from '../entities/entity.js';
+import { Player } from '../entities/player.js';
 
 export class Physics {
     private engine: Engine;
-    private entityRegistry: EntityRegistry;
-    private raycaster: THREE.Raycaster;
+    private player: Entity | null = null;
+    private environment: THREE.Mesh | null = null;
+    public isOnGround: boolean = false;
+
+    private tempVecA: THREE.Vector3 = new THREE.Vector3();
+    private tempVecB: THREE.Vector3 = new THREE.Vector3();
+    private tempLine: THREE.Line3 = new THREE.Line3();
+    private tempMat: THREE.Matrix4 = new THREE.Matrix4();
+    private tempAABB: THREE.Box3 = new THREE.Box3();
 
     constructor(_engine: Engine) {
         this.engine = _engine;
-        this.entityRegistry = _engine.entityRegistry;
-        this.raycaster = new THREE.Raycaster();
+        this.player = null;
+        this.environment = null;
+    }
+
+    public init(): void {
+        for (const e of this.engine.entityRegistry.getEntities()) {
+            if (e.entityType === EntityType.Player) {
+                this.player = e;
+            }
+            if (e.entityType === EntityType.Environment) {
+                this.environment = e.collider as THREE.Mesh;
+            }
+        }
     }
 
     update(delta: number): void {
-        this.entityRegistry.getEntities().forEach(e => {
-            // apply gravity
-            if (!e.static) this.gravity(e, delta);
-
-            // Check terrain collision for non-static entities
-            if (!e.static && e.collider) {
-                this.checkEnvironmentCollision(e);
+        if (this.player && this.environment) {
+            if (!(this.environment as THREE.Mesh).geometry.boundsTree) {
+                console.warn("BVH not ready yet!");
+                return;
             }
 
-            // check for collisions between entities
-            this.entityRegistry.getEntities().forEach(o => {
-                if (e !== o && !o.static) {
-                    if (e.collider && o.collider && e.collider.intersectsBox(o.collider)) {
-                        this.resolveAABBCollisions(e, o);
-                    }
+            this.gravity(delta);
+    
+            this.checkCollisions();  // Modifies tempLine
+            this.resolveCollisions(delta);  // Uses tempLine
+    
+            this.player!.position.addScaledVector(this.player!.velocity, delta);
+            this.player!.updateMatrixWorld();
+        }
+    }
+
+    gravity(delta: number): void {
+        if (!this.isOnGround) {
+            this.player!.velocity.y -= 9.8 * delta;
+        } else {
+            this.player!.velocity.y = -9.8 * delta;
+        }
+    }
+
+    checkCollisions(): void {  // Return void, modify tempLine directly
+        this.tempMat.copy(this.environment!.matrixWorld).invert();
+        this.tempLine.copy((this.player as Player).capsule.lineSegment)
+            .applyMatrix4(this.player!.matrixWorld)
+            .applyMatrix4(this.tempMat);
+    
+        this.tempAABB.setFromObject(this.player!);
+        const radius = (this.player as Player).capsule.radius;
+    
+        (this.environment! as THREE.Mesh).geometry.boundsTree?.shapecast({
+            intersectsBounds: box => box.intersectsBox(this.tempAABB),
+    
+            intersectsTriangle: (tri) => {
+                const triPoint = this.tempVecA;
+                const playerPoint = this.tempVecB;
+    
+                const distance = tri.closestPointToSegment(this.tempLine, triPoint, playerPoint);
+                if (distance < radius) {
+                    const depth = radius - distance;
+                    const direction = playerPoint.sub(triPoint).normalize();
+    
+                    // Accumulate all corrections into tempLine
+                    this.tempLine.start.addScaledVector(direction, depth);
+                    this.tempLine.end.addScaledVector(direction, depth);
                 }
-            });
-            
-            // at the end of the frame, update the position of all entities
-            if (!e.static) e.position.add(e.velocity.clone().multiplyScalar(delta));
-            if (e.collider) e.collider.setFromObject(e.mesh);
+            }
         });
     }
-
-    /**
-     * Resolve collisions between two AABB entities.
-     */
-    resolveAABBCollisions(e: Entity, o: Entity): void {
-        const relativeVelocity = e.velocity.clone().sub(o.velocity);
-
-        const eMax = e.collider!.max;
-        const eMin = e.collider!.min;
-        const oMax = o.collider!.max;
-        const oMin = o.collider!.min;
-
-        // calculate penetration depth
-        const penetrationX = Math.min(eMax.x - oMin.x, oMax.x - eMin.x);
-        const penetrationY = Math.min(eMax.y - oMin.y, oMax.y - eMin.y);
-        const penetrationZ = Math.min(eMax.z - oMin.z, oMax.z - eMin.z);
-
-        // get the normal of the collision via the smallest penetration
-        const penetrationVector = new THREE.Vector3(penetrationX, penetrationY, penetrationZ);
-        const normal = new THREE.Vector3();
-        if (penetrationVector.x < penetrationVector.y && penetrationVector.x < penetrationVector.z) {
-            normal.x = e.position.x < o.position.x ? -1 : 1;
-        } else if (penetrationVector.y < penetrationVector.x && penetrationVector.y < penetrationVector.z) {
-            normal.y = e.position.y < o.position.y ? -1 : 1;
+    
+    resolveCollisions(delta: number): void {
+        const newPosition = this.tempVecA;
+        newPosition.copy(this.tempLine.start).applyMatrix4(this.environment!.matrixWorld);
+    
+        const deltaVector = this.tempVecB;
+        deltaVector.subVectors(newPosition, this.player!.position);
+    
+        this.isOnGround = deltaVector.y > Math.abs(delta * this.player!.velocity.y * 0.25);
+    
+        const offset = Math.max(0, deltaVector.length() - 1e-5);
+        deltaVector.normalize().multiplyScalar(offset);
+    
+        this.player!.position.add(deltaVector);
+    
+        if (!this.isOnGround) {
+            deltaVector.normalize();
+            this.player!.velocity.addScaledVector(deltaVector, -deltaVector.dot(this.player!.velocity));
         } else {
-            normal.z = e.position.z < o.position.z ? -1 : 1;
+            // Only zero Y velocity when grounded, keep horizontal movement
+            this.player!.velocity.y = 0;
         }
-
-        // calculate the impulse
-        const impulse = relativeVelocity.dot(normal);
-        const impulseVector = normal.clone().multiplyScalar(impulse);
-        e.velocity.sub(e.static ? new THREE.Vector3(0) : impulseVector);
-        o.velocity.add(o.static ? new THREE.Vector3(0) : impulseVector);
-    }
-
-    gravity(e: Entity, delta: number): void {
-        e.velocity.y -= 9.8 * delta;
-    }
-
-    /**
-     * Check if an AABB collides with the environment using raycast.
-     * Casts rays downward from the bottom of the entity's collider.
-     * Uses Layers.Environment to filter terrain objects.
-     */
-    private checkEnvironmentCollision(e: Entity): void {
-        // Get the bottom center of the AABB
-        const bottomCenter = new THREE.Vector3(
-            e.collider!.min.x + (e.collider!.max.x - e.collider!.min.x) * 0.5,
-            e.collider!.min.y,
-            e.collider!.min.z + (e.collider!.max.z - e.collider!.min.z) * 0.5
-        );
-
-        // Set raycaster to check Environment layer only
-        this.raycaster.layers.set(Layers.Environment);
-
-        // Cast ray downward from the bottom center
-        this.raycaster.set(bottomCenter, new THREE.Vector3(0, -1, 0));
-            
-        // Intersect with all objects in the scene on the Environment layer
-        const intersects = this.raycaster.intersectObjects(this.engine.scene.children, true);
-        
-        if (intersects.length > 0) {
-            const groundHeight = intersects[0].point.y;
-            this.resolveEnvironmentCollision(e, groundHeight);
-        }
-    }
-
-    /**
-     * Resolve collision between an entity and the environment.
-     * @param e The entity colliding with the environment
-     * @param groundHeight The Y coordinate of the ground surface
-     */
-    private resolveEnvironmentCollision(e: Entity, groundHeight: number): void {
-        // If entity is below or intersecting ground, push it up
-        const normal = new THREE.Vector3(0, 1, 0);
-        const relativeVelocity = e.velocity.clone();
-        const impulse = relativeVelocity.dot(normal);
-        const impulseVector = normal.clone().multiplyScalar(impulse);
-        e.velocity.sub(e.static ? new THREE.Vector3(0) : impulseVector);
     }
 }

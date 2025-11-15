@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 import { Engine } from './engine/engine.js';
-import { Colours } from './constants/colours.js';
+        import { Colours } from './constants.js';
 import { EntityRegistry } from './entities/entity-registry.js';
 import { Player } from './entities/player.js';
 import { Tiramysu } from './entities/tiramysu.js';
-import { DebugLine } from './entities/debugline.js';
 import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
 import { PlayerMovementSystem } from './systems/player-movement.js';
@@ -16,7 +15,6 @@ export class World {
     
     private player!: Player;
     private tiramysu!: Tiramysu;
-    private pathLine!: DebugLine;
     private cameraSystem!: CameraSystem;
     private debugUI!: DebugUI;
     private playerMovementSystem!: PlayerMovementSystem;
@@ -50,22 +48,9 @@ export class World {
 
         // -------------- initialize player movement system --------------
         this.playerMovementSystem = new PlayerMovementSystem(this.engine);
-
-        // -------------- initialize debugline -----------
-        this.pathLine = new DebugLine(new THREE.Vector3(), this.player.position, this.engine);
     }
 
     update(delta: number): void {
-        if (this.engine.input.navmeshIntersects.length > 0) {
-            const intersect = this.engine.input.navmeshIntersects[0];
-            const offset = intersect.point.clone().add(new THREE.Vector3(0, 5, 0));
-            
-            this.pathLine.updatePoints(intersect.point, offset);
-            if (this.engine.input.clicked) {
-                // this.player.setDestination(intersect.point);
-            }
-        }
-
         // Update player movement system
         this.playerMovementSystem.update(delta);
 
