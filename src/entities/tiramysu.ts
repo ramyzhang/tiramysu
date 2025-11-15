@@ -29,8 +29,10 @@ export class Tiramysu extends Entity {
 
         super(mesh as THREE.Mesh, EntityType.Environment);
 
-        this.collider = new THREE.Mesh(mergedGeometry);
-        (this.collider as THREE.Mesh).material = new THREE.MeshBasicMaterial({ color: Colours.rose, wireframe: true });
+        this.collider = new THREE.Mesh(
+            mergedGeometry,
+            new THREE.MeshBasicMaterial({ wireframe: true, color: Colours.rose })
+        );
         this.add(this.collider);
 
         this.name = 'Tiramysu';

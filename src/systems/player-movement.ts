@@ -95,7 +95,7 @@ export class PlayerMovementSystem extends System {
         if (!player) return;
     
         if (this.isJumping && this.engine.physics.isOnGround) {
-            player.velocity.y += 10.0;
+            player.velocity.y += 5.0;
             this.engine.physics.isOnGround = false;
         }
         this.isJumping = false;
@@ -128,6 +128,8 @@ export class PlayerMovementSystem extends System {
             player.position.copy(PlayerSpawnPosition);
             player.velocity.set(0, 0, 0);  // Reset velocity too
         }
+
+        player.updateMatrixWorld();
     }
 }
 
