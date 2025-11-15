@@ -94,19 +94,23 @@ export class Physics {
         const deltaVector = this.tempVecB;
         deltaVector.subVectors(newPosition, this.player!.position);
     
-        this.isOnGround = deltaVector.y > Math.abs(delta * this.player!.velocity.y * 0.25);
-    
-        const offset = Math.max(0, deltaVector.length() - 1e-5);
-        deltaVector.normalize().multiplyScalar(offset);
-    
-        this.player!.position.add(deltaVector);
-    
-        if (!this.isOnGround) {
-            deltaVector.normalize();
-            this.player!.velocity.addScaledVector(deltaVector, -deltaVector.dot(this.player!.velocity));
-        } else {
-            // Only zero Y velocity when grounded, keep horizontal movement
-            this.player!.velocity.y = 0;
+        const hadCollision = deltaVector.length() > 0.005;
+
+        if (hadCollision) {
+            // Only update ground state if we had a collision
+            this.isOnGround = deltaVector.y > Math.abs(delta * this.player!.velocity.y * 0.25);
+
+            const offset = Math.max(0, deltaVector.length() - 1e-5);
+            deltaVector.normalize().multiplyScalar(offset);
+
+            this.player!.position.add(deltaVector);
+
+            if (!this.isOnGround) {
+                deltaVector.normalize();
+                this.player!.velocity.addScaledVector(deltaVector, -deltaVector.dot(this.player!.velocity));
+            } else {
+                this.player!.velocity.y = 0;
+            }
         }
     }
 }

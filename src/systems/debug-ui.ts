@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
-import { Entity } from '../entities/entity.js';
+import { Entity, EntityType } from '../entities/entity.js';
 import { updatePointerPosition } from '../utils/utils.js';
 import { Layers } from '../constants.js';
 
@@ -129,6 +129,11 @@ export class DebugUI extends System {
         // Output entity name, position, velocity prettily
         const position = entity.position;
         const velocity = (entity as any).velocity || { x: 0, y: 0, z: 0 };
+        
+        // Check if this is the player entity to show isOnGround
+        const isPlayer = entity.entityType === EntityType.Player;
+        const isOnGround = isPlayer ? this.engine.physics.isOnGround : null;
+        
         this.infoDiv.innerHTML = `
             <b>Debug UI</b>
             <hr style="margin:10px 0 10px 0; border-color:#444B;">
@@ -141,11 +146,17 @@ y: <span style="color:#7fe3ff">${position.y.toFixed(2)}</span>
 z: <span style="color:#7fe3ff">${position.z.toFixed(2)}</span>  
             </pre>
             <b>Velocity:</b>
-            <pre style="margin-left:12px;margin-top:3px;margin-bottom:0;">
+            <pre style="margin-left:12px;margin-top:3px;margin-bottom:${isOnGround !== null ? '3px' : '0'};">
 x: <span style="color:#ffa9aa">${velocity.x?.toFixed?.(2) ?? '0.00'}</span>  
 y: <span style="color:#ffa9aa">${velocity.y?.toFixed?.(2) ?? '0.00'}</span>  
 z: <span style="color:#ffa9aa">${velocity.z?.toFixed?.(2) ?? '0.00'}</span>  
             </pre>
+            ${isOnGround !== null ? `
+            <b>Is On Ground:</b>
+            <pre style="margin-left:12px;margin-top:3px;margin-bottom:0;">
+<span style="color:${isOnGround ? '#4ade80' : '#f87171'}">${isOnGround ? 'true' : 'false'}</span>
+            </pre>
+            ` : ''}
         `.replace(/^\s{12}/gm, ''); // Remove left spaces
     }
 
@@ -174,31 +185,6 @@ z: <span style="color:#ffa9aa">${velocity.z?.toFixed?.(2) ?? '0.00'}</span>
                 </span>
             </div>
         `;
-    }
-
-    /**
-     * Gets memory usage information from the Performance API.
-     */
-    private getMemoryInfo(): string {
-        // Check for performance.memory (Chrome/Edge)
-        const perfMemory = (performance as any).memory;
-        if (perfMemory) {
-            const used = perfMemory.usedJSHeapSize;
-            const total = perfMemory.totalJSHeapSize;
-            const limit = perfMemory.jsHeapSizeLimit;
-            
-            const formatBytes = (bytes: number): string => {
-                if (bytes < 1024) return bytes + ' B';
-                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-                if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-                return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
-            };
-            
-            return `${formatBytes(used)} / ${formatBytes(total)}`;
-        }
-        
-        // Fallback if memory API is not available
-        return 'N/A';
     }
 
     dispose(): void {

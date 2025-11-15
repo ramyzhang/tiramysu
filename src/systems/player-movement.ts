@@ -97,6 +97,7 @@ export class PlayerMovementSystem extends System {
         if (this.isJumping && this.engine.physics.isOnGround) {
             player.velocity.y += 5.0;
             this.engine.physics.isOnGround = false;
+            console.log("Jumping");
         }
         this.isJumping = false;
     

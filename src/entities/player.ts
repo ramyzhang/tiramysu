@@ -5,7 +5,7 @@ import { Colours, Layers, PlayerSpawnPosition } from '../constants.js';
 
 export class Capsule {
     radius: number = 0.5;
-    lineSegment: THREE.Line3 = new THREE.Line3(new THREE.Vector3(), new THREE.Vector3(0, -1.0, 0));
+    lineSegment: THREE.Line3 = new THREE.Line3(new THREE.Vector3(), new THREE.Vector3(0, -0.5, 0));
 }
 
 export class Player extends Entity {    
@@ -13,7 +13,7 @@ export class Player extends Entity {
 
     constructor() {
         // use rounded box geometry for the capsule
-        const cylinder = new THREE.CapsuleGeometry(0.5, 2.0, 4, 10);
+        const cylinder = new THREE.CapsuleGeometry(0.5, 1.0, 4, 10);
         const material = new THREE.MeshLambertMaterial({ color: Colours.rose, wireframe: true });
         const mesh = new THREE.Mesh(cylinder, material);
         const aabb = new THREE.Box3().setFromObject(mesh);
