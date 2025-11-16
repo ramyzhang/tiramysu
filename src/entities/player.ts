@@ -16,12 +16,9 @@ export class Player extends Entity {
         const cylinder = new THREE.CapsuleGeometry(0.5, 1.0, 4, 10);
         const material = new THREE.MeshLambertMaterial({ color: Colours.rose, wireframe: true });
         const mesh = new THREE.Mesh(cylinder, material);
-        const aabb = new THREE.Box3().setFromObject(mesh);
-        const aabbHelper = new THREE.Box3Helper(aabb, Colours.rose);
 
         super(mesh, EntityType.Player);
         this.attach(mesh);
-        this.add(aabbHelper);
         this.position.copy(PlayerSpawnPosition);
         this.name = 'Player';
         for (const child of this.children) {

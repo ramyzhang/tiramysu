@@ -17,6 +17,8 @@ export class DebugUI extends System {
     private statsDiv: HTMLDivElement;
     private fpsHistory: number[] = [];
     private readonly fpsHistorySize: number = 30;
+    private frameCounter: number = 0;
+    private cachedVelocity: THREE.Vector3 = new THREE.Vector3();
 
     constructor(engine: Engine) {
         super(engine);
@@ -72,6 +74,16 @@ export class DebugUI extends System {
         this.updateStats(delta);
 
         if (this.selectedEntity) {
+            // Update velocity cache every 5 frames
+            this.frameCounter++;
+            if (this.frameCounter >= 20) {
+                const velocity = (this.selectedEntity as any).velocity;
+                if (velocity) {
+                    this.cachedVelocity.set(velocity.x || 0, velocity.y || 0, velocity.z || 0);
+                }
+                this.frameCounter = 0;
+            }
+            
             // Update floating div content with latest live data
             this.renderEntityInfo(this.selectedEntity);
         }
@@ -115,6 +127,14 @@ export class DebugUI extends System {
         }
 
         this.selectedEntity = foundEntity;
+        // Reset frame counter and cache velocity when selecting a new entity
+        if (foundEntity) {
+            this.frameCounter = 0;
+            const velocity = (foundEntity as any).velocity;
+            if (velocity) {
+                this.cachedVelocity.set(velocity.x || 0, velocity.y || 0, velocity.z || 0);
+            }
+        }
         this.renderEntityInfo(foundEntity);
     }
 
@@ -128,7 +148,8 @@ export class DebugUI extends System {
         }
         // Output entity name, position, velocity prettily
         const position = entity.position;
-        const velocity = (entity as any).velocity || { x: 0, y: 0, z: 0 };
+        // Use cached velocity (updated every 5 frames) instead of current velocity
+        const velocity = this.cachedVelocity;
         
         // Check if this is the player entity to show isOnGround
         const isPlayer = entity.entityType === EntityType.Player;
@@ -138,25 +159,9 @@ export class DebugUI extends System {
             <b>Debug UI</b>
             <hr style="margin:10px 0 10px 0; border-color:#444B;">
             <b>Name:</b> <span style="color:#ffcd94">${entity.name || 'Unnamed Entity'}</span><br>
-            
-            <b>Position:</b>
-            <pre style="margin-left:12px;margin-top:3px;margin-bottom:3px;">
-x: <span style="color:#7fe3ff">${position.x.toFixed(2)}</span>  
-y: <span style="color:#7fe3ff">${position.y.toFixed(2)}</span>  
-z: <span style="color:#7fe3ff">${position.z.toFixed(2)}</span>  
-            </pre>
-            <b>Velocity:</b>
-            <pre style="margin-left:12px;margin-top:3px;margin-bottom:${isOnGround !== null ? '3px' : '0'};">
-x: <span style="color:#ffa9aa">${velocity.x?.toFixed?.(2) ?? '0.00'}</span>  
-y: <span style="color:#ffa9aa">${velocity.y?.toFixed?.(2) ?? '0.00'}</span>  
-z: <span style="color:#ffa9aa">${velocity.z?.toFixed?.(2) ?? '0.00'}</span>  
-            </pre>
-            ${isOnGround !== null ? `
-            <b>Is On Ground:</b>
-            <pre style="margin-left:12px;margin-top:3px;margin-bottom:0;">
-<span style="color:${isOnGround ? '#4ade80' : '#f87171'}">${isOnGround ? 'true' : 'false'}</span>
-            </pre>
-            ` : ''}
+            <b>Position:</b> (<span style="color:#7fe3ff">${position.x.toFixed(2)}</span>, <span style="color:#7fe3ff">${position.y.toFixed(2)}</span>, <span style="color:#7fe3ff">${position.z.toFixed(2)}</span>)<br>
+            <b>Velocity:</b> (<span style="color:#ffa9aa">${velocity.x.toFixed(2)}</span>, <span style="color:#ffa9aa">${velocity.y.toFixed(2)}</span>, <span style="color:#ffa9aa">${velocity.z.toFixed(2)}</span>)${isOnGround !== null ? `<br>
+            <b>Is On Ground:</b> <span style="color:${isOnGround ? '#4ade80' : '#f87171'}">${isOnGround ? 'true' : 'false'}</span>` : ''}
         `.replace(/^\s{12}/gm, ''); // Remove left spaces
     }
 

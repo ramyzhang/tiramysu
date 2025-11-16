@@ -54,13 +54,6 @@ export class PlayerMovementSystem extends System {
                 this.pointerY = pointerY;
             }
         });
-
-        window.addEventListener('keydown', (e: KeyboardEvent) => {
-            // space for jump
-            if (e.key === ' ') {
-                this.isJumping = true;
-            }
-        });
     }
 
     /**
@@ -93,13 +86,6 @@ export class PlayerMovementSystem extends System {
     update(delta: number): void {
         const player = this.findPlayer();
         if (!player) return;
-    
-        if (this.isJumping && this.engine.physics.isOnGround) {
-            player.velocity.y += 5.0;
-            this.engine.physics.isOnGround = false;
-            console.log("Jumping");
-        }
-        this.isJumping = false;
     
         if (this.isPointerDown) {
             if (this.pointerY > 0.5 && !this.isPointerMoving) {

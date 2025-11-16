@@ -51,11 +51,7 @@ export class Physics {
     }
 
     gravity(delta: number): void {
-        if (!this.isOnGround) {
-            this.player!.velocity.y -= 9.8 * delta;
-        } else {
-            this.player!.velocity.y = -9.8 * delta;
-        }
+        this.player!.velocity.y -= 9.8 * delta;
     }
 
     checkCollisions(): void {  // Return void, modify tempLine directly
