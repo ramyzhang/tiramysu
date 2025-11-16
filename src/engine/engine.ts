@@ -4,6 +4,7 @@ import { World } from '../world.js';
 import { EntityRegistry } from '../entities/entity-registry.js';
 import { Physics } from './physics.js';
 import { ResourceManager } from './resources.js';
+import { InputManager } from './input.js';
 
 export class Engine {
     private renderer: THREE.WebGLRenderer;
@@ -15,11 +16,10 @@ export class Engine {
 
     public camera: THREE.PerspectiveCamera;
     public clock: THREE.Clock;
-    
-    private isFocused: boolean = true;
 
     public resources: ResourceManager;
     public physics: Physics;
+    public input: InputManager;
 
     constructor(canvas: HTMLCanvasElement) {
         // Initialize core Three.js components
@@ -38,21 +38,20 @@ export class Engine {
 
         // Initialize systems
         this.resources = new ResourceManager();
+        this.input = new InputManager();
         this.entityRegistry = new EntityRegistry(this);
         this.world = new World(this);
         this.physics = new Physics(this);
 
-        // Handle resizing
+        // Handle window resize (InputManager tracks size, but we need to update camera/renderer)
         window.addEventListener('resize', () => this.onResize());
         
-        // Handle window focus
+        // Handle window focus (InputManager tracks focus, but we need to control clock)
         window.addEventListener('blur', () => {
-            this.isFocused = false;
             this.clock.stop();
         });
         
         window.addEventListener('focus', () => {
-            this.isFocused = true;
             this.clock.start();
         });
     }
@@ -69,7 +68,7 @@ export class Engine {
     }
 
     private update(): void {
-        if (!this.isFocused) {
+        if (!this.input.isFocused) {
             // Pause updates when window is unfocused, but still render
             requestAnimationFrame(() => this.update());
             return;
@@ -90,8 +89,8 @@ export class Engine {
 
     private onResize(): void {
         // Handle window resize
-        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.aspect = this.input.windowWidth / this.input.windowHeight;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(this.input.windowWidth, this.input.windowHeight);
     }
 }

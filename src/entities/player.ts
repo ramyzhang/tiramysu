@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import { Entity, EntityType } from "./entity.js";
-import { Colours, Layers, PlayerSpawnPosition } from '../constants.js';
+import { Colours, Layers, PlayerSpawnPosition, PlayerSpawnDirection } from '../constants.js';
 
 export class Capsule {
     radius: number = 0.5;
@@ -24,5 +24,6 @@ export class Player extends Entity {
         for (const child of this.children) {
             child.layers.set(Layers.Player);
         }
+        this.setRotationFromAxisAngle(PlayerSpawnDirection, 0);
     }
 }

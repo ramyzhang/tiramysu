@@ -4,56 +4,17 @@ import { Engine } from '../engine/engine.js';
 import { Player } from '../entities/player.js';
 import { EntityType } from '../entities/entity.js';
 import { PlayerSpawnPosition } from '../constants.js';
-import { updatePointerPosition } from '../utils/utils.js';
 
 export class PlayerMovementSystem extends System {
     private player: Player | null = null;
-    private isPointerDown: boolean = false;
-    private isPointerMoving: boolean = false;
-    private isJumping: boolean = false;
-    private pointerX: number = 0; // Normalized device coordinates (-1 to 1)
-    private pointerY: number = 0; // Normalized device coordinates (-1 to 1)
     private maxRotationSpeed: number = 2.0; // Radians per second
     private moveSpeed: number = 5.0; // Units per second
+    private playerDirection: THREE.Vector3 = new THREE.Vector3();
+    private cameraDirection: THREE.Vector3 = new THREE.Vector3();
 
     constructor(engine: Engine) {
         super(engine);
-        this.setupInput();
-    }
-
-    private setupInput(): void {        
-        window.addEventListener('pointerdown', (e: PointerEvent) => {
-            // Respond to left mouse button (desktop), or primary touch (touch/mobile)
-            if (
-                e.pointerType === 'touch' ||
-                (e.pointerType === 'mouse' && e.button === 0) // left mouse
-            ) {
-                this.isPointerDown = true;
-                const { pointerX, pointerY } = updatePointerPosition(e);
-                this.pointerX = pointerX;
-                this.pointerY = pointerY;
-            }
-        });
-
-        window.addEventListener('pointerup', (e: PointerEvent) => {
-            // Respond to left mouse button (desktop), or primary touch (touch/mobile)
-            if (
-                e.pointerType === 'touch' ||
-                (e.pointerType === 'mouse' && e.button === 0) // left mouse
-            ) {
-                this.isPointerDown = false;
-                this.isPointerMoving = false;
-            }
-        });
-
-        window.addEventListener('pointermove', (e: PointerEvent) => {
-            if (this.isPointerDown) {
-                this.isPointerMoving = true;
-                const { pointerX, pointerY } = updatePointerPosition(e);
-                this.pointerX = pointerX;
-                this.pointerY = pointerY;
-            }
-        });
+        this.cameraDirection.copy(this.engine.camera.getWorldDirection(new THREE.Vector3()));
     }
 
     /**
@@ -87,24 +48,27 @@ export class PlayerMovementSystem extends System {
         const player = this.findPlayer();
         if (!player) return;
     
-        if (this.isPointerDown) {
-            if (this.pointerY > 0.5 && !this.isPointerMoving) {
-                const targetRotation = this.pointerX < 0 ? Math.PI : -Math.PI;
-                player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, targetRotation, delta * this.maxRotationSpeed);
-            } else {
-                const rotationAmount = -this.pointerX * this.maxRotationSpeed * delta;
-                player.rotateY(rotationAmount);
+        const input = this.engine.input;
+        this.cameraDirection.copy(this.engine.camera.getWorldDirection(new THREE.Vector3()));
+        
+        if (input.pointerDown) {
+            let angle = Math.atan2(input.pointerPosition.y, input.pointerPosition.x) - Math.PI / 2 + this.cameraDirection.y;
+
+            const angleDifference = Math.abs(player.rotation.y - angle);
+            if (angleDifference > 0.01) {
+                if (angleDifference > Math.PI) {
+                    angle -= Math.PI * 2;
+                }
+                player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, angle, 1 - Math.exp(-delta * this.maxRotationSpeed));
+                console.log("angle: " + THREE.MathUtils.radToDeg(angle).toFixed(2) + " player.rotation.y: " + THREE.MathUtils.radToDeg(player.rotation.y).toFixed(2));
+                player.updateMatrixWorld();
             }
-    
-            // SET VELOCITY instead of directly changing position
-            const forward = new THREE.Vector3();
-            player.getWorldDirection(forward);
-            forward.normalize();
-            
-            // Set horizontal velocity based on movement direction
-            player.velocity.x = forward.x * this.moveSpeed;
-            player.velocity.z = forward.z * this.moveSpeed;
-            // Don't touch velocity.y - that's handled by physics/gravity
+
+            player.getWorldDirection(this.playerDirection);
+            this.playerDirection.normalize();
+
+            player.velocity.x = this.playerDirection.x * this.moveSpeed;
+            player.velocity.z = this.playerDirection.z * this.moveSpeed;
         } else {
             // When not moving, zero out horizontal velocity
             player.velocity.x = 0;
@@ -115,8 +79,6 @@ export class PlayerMovementSystem extends System {
             player.position.copy(PlayerSpawnPosition);
             player.velocity.set(0, 0, 0);  // Reset velocity too
         }
-
-        player.updateMatrixWorld();
     }
 }
 

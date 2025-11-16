@@ -62,9 +62,8 @@ export class DebugUI extends System {
         this.statsDiv.style.lineHeight = '1.6';
         document.body.appendChild(this.statsDiv);
 
-        // Register right-click event for raycasting entities
-        window.addEventListener('contextmenu', (e: PointerEvent) => {
-            e.preventDefault();
+        // Register right-click event for raycasting entities via InputManager
+        this.engine.input.setContextMenuCallback((e: PointerEvent) => {
             this.handleRightClick(e);
         });
     }
@@ -194,6 +193,8 @@ export class DebugUI extends System {
 
     dispose(): void {
         this.selectedEntity = null;
+        // Clear context menu callback
+        this.engine.input.clearContextMenuCallback();
         if (this.infoDiv && this.infoDiv.parentElement) {
             this.infoDiv.parentElement.removeChild(this.infoDiv);
         }
