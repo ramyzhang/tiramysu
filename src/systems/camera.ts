@@ -28,7 +28,6 @@ export class CameraSystem extends System {
 
     constructor(engine: Engine) {
         super(engine);
-        this.engine.camera.setRotationFromAxisAngle(PlayerSpawnDirection, 0);
     }
 
     setPlayer(player: Player): void {
@@ -59,7 +58,6 @@ export class CameraSystem extends System {
         }
         this.lastCKeyState = cKeyPressed;
 
-        this.player!.getWorldDirection(this.playerDirection);
         if (this.currentMode === CameraMode.Player) {
             this.updatePlayerCamera(delta);
         } else {
@@ -69,24 +67,23 @@ export class CameraSystem extends System {
 
     private updatePlayerCamera(delta: number): void {
         if (!this.player) return;
-        this.cameraDirection.copy(this.engine.camera.getWorldDirection(new THREE.Vector3()));
+        this.engine.camera.getWorldDirection(this.cameraDirection);
+        this.player.getWorldDirection(this.playerDirection);
+        this.cameraYaw = this.engine.camera.rotation.y;
 
         // lerp the camera angle to the player direction extremely slowly)
-        const playerAngle = Math.atan2(this.playerDirection.z, this.playerDirection.x);
-        if (this.cameraDirection.dot(this.playerDirection) < 0.99) {
-            this.cameraYaw = THREE.MathUtils.lerp(this.cameraYaw, playerAngle, 1 - Math.exp(-delta * 0.01));
+        if (this.cameraYaw < this.playerDirection.y) {
+            this.cameraYaw += delta * 0.01;
+        } else if (this.cameraYaw > this.playerDirection.y) {
+            this.cameraYaw -= delta * 0.01;
         }
 
         // get the difference in angle between the player direction and the camera direction
-        const horizontalDist = new THREE.Vector3(Math.cos(this.cameraYaw), 0, Math.sin(this.cameraYaw));
-        horizontalDist.multiplyScalar(-this.cameraDistance);
+        let finalDist = this.cameraDirection.clone().multiplyScalar(-this.cameraDistance);
         const verticalDist = this.cameraDistance * Math.sin(THREE.MathUtils.degToRad(30));
+        finalDist.y = verticalDist;
         
-        // always make the camera face the positive z axis
-        this.cameraDirection.copy(horizontalDist);
-        this.cameraDirection.y = verticalDist;
-        
-        this.engine.camera.position.copy(this.player.position).add(this.cameraDirection);
+        this.engine.camera.rotation.set(0, this.cameraYaw, 0);
         this.engine.camera.lookAt(this.player.position); 
     }
 

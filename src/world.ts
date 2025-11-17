@@ -7,7 +7,6 @@ import { Tiramysu } from './entities/tiramysu.js';
 import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
 import { PlayerMovementSystem } from './systems/player-movement.js';
-import { DebugDirectionSystem } from './systems/debug-direction.js'; // TODO: delete when not needed
 
 export class World {   
     private engine: Engine;
@@ -19,7 +18,6 @@ export class World {
     private cameraSystem!: CameraSystem;
     private debugUI!: DebugUI;
     private playerMovementSystem!: PlayerMovementSystem;
-    private debugDirectionSystem!: DebugDirectionSystem; // TODO: delete when not needed
 
     constructor(_engine: Engine) {
         this.engine = _engine;
@@ -48,9 +46,6 @@ export class World {
         // -------------- initialize debug UI --------------
         this.debugUI = new DebugUI(this.engine);
 
-        // -------------- TODO DELETE WHEN NOT NEEDED: initialize debug direction system
-        this.debugDirectionSystem = new DebugDirectionSystem(this.engine);
-
         // -------------- initialize player movement system --------------
         this.playerMovementSystem = new PlayerMovementSystem(this.engine);
     }
@@ -64,8 +59,5 @@ export class World {
 
         // Update debug UI
         this.debugUI.update(delta);
-
-        // TODO DELETE WHEN NOT NEEDED: Update debug direction system
-        this.debugDirectionSystem.update(delta);
     }
 }

@@ -19,6 +19,9 @@ export class DebugUI extends System {
     private readonly fpsHistorySize: number = 30;
     private frameCounter: number = 0;
     private cachedVelocity: THREE.Vector3 = new THREE.Vector3();
+    private cameraInfoFrameCounter: number = 0;
+    private cachedCameraPosition: THREE.Vector3 = new THREE.Vector3();
+    private cachedCameraDirection: THREE.Vector3 = new THREE.Vector3();
 
     constructor(engine: Engine) {
         super(engine);
@@ -72,8 +75,16 @@ export class DebugUI extends System {
         // Update FPS and memory stats
         this.updateStats(delta);
 
+        // Update camera info cache every 20 frames
+        this.cameraInfoFrameCounter++;
+        if (this.cameraInfoFrameCounter >= 20) {
+            this.cachedCameraPosition.copy(this.engine.camera.position);
+            this.engine.camera.getWorldDirection(this.cachedCameraDirection);
+            this.cameraInfoFrameCounter = 0;
+        }
+
         if (this.selectedEntity) {
-            // Update velocity cache every 5 frames
+            // Update velocity cache every 20 frames
             this.frameCounter++;
             if (this.frameCounter >= 20) {
                 const velocity = (this.selectedEntity as any).velocity;
@@ -187,6 +198,16 @@ export class DebugUI extends System {
                 <span style="color: ${avgFps >= 55 ? '#4ade80' : avgFps >= 30 ? '#fbbf24' : '#f87171'}; font-weight: bold;">
                     ${Math.round(avgFps)}
                 </span>
+            </div>
+            <div style="margin-top: 8px; font-size: 12px;">
+                <div style="color: #7fe3ff; margin-bottom: 4px;">Camera Position:</div>
+                <div style="color: #ffcd94; margin-left: 8px;">
+                    (${this.cachedCameraPosition.x.toFixed(2)}, ${this.cachedCameraPosition.y.toFixed(2)}, ${this.cachedCameraPosition.z.toFixed(2)})
+                </div>
+                <div style="color: #7fe3ff; margin-top: 6px; margin-bottom: 4px;">Camera Direction:</div>
+                <div style="color: #ffcd94; margin-left: 8px;">
+                    (${this.cachedCameraDirection.x.toFixed(2)}, ${this.cachedCameraDirection.y.toFixed(2)}, ${this.cachedCameraDirection.z.toFixed(2)})
+                </div>
             </div>
         `;
     }

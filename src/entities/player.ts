@@ -24,6 +24,6 @@ export class Player extends Entity {
         for (const child of this.children) {
             child.layers.set(Layers.Player);
         }
-        this.setRotationFromAxisAngle(PlayerSpawnDirection, 0);
+        this.lookAt(PlayerSpawnPosition.add(PlayerSpawnDirection));
     }
 }

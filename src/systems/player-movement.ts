@@ -12,6 +12,12 @@ export class PlayerMovementSystem extends System {
     private playerDirection: THREE.Vector3 = new THREE.Vector3();
     private cameraDirection: THREE.Vector3 = new THREE.Vector3();
 
+    private inputDirection: THREE.Vector2 = new THREE.Vector2();
+
+    private tempVecA: THREE.Vector3 = new THREE.Vector3();
+    private tempVecB: THREE.Vector3 = new THREE.Vector3();
+    private tempMat: THREE.Matrix4 = new THREE.Matrix4();
+
     constructor(engine: Engine) {
         super(engine);
         this.cameraDirection.copy(this.engine.camera.getWorldDirection(new THREE.Vector3()));
@@ -44,37 +50,68 @@ export class PlayerMovementSystem extends System {
         return null;
     }
 
+    /**
+     * Lerps between two angles, taking the shortest path and handling 0/360 degree wrapping.
+     * @param current Current angle in radians
+     * @param target Target angle in radians
+     * @param t Interpolation factor (0-1)
+     * @returns Interpolated angle in radians, normalized to [0, 2π]
+     */
+    private lerpAngle(current: number, target: number, t: number): number {
+        // Normalize both angles to [0, 2π]
+        current = ((current % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+        target = ((target % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+
+        // Calculate the shortest angular difference
+        let delta = target - current;
+        
+        // Normalize delta to [-π, π] to always take the shortest path
+        if (delta > Math.PI) {
+            delta -= 2 * Math.PI;
+        } else if (delta < -Math.PI) {
+            delta += 2 * Math.PI;
+        }
+
+        // Lerp and normalize result
+        const result = current + delta * t;
+        return ((result % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+    }
+
     update(delta: number): void {
         const player = this.findPlayer();
         if (!player) return;
     
         const input = this.engine.input;
-        this.cameraDirection.copy(this.engine.camera.getWorldDirection(new THREE.Vector3()));
-        
-        if (input.pointerDown) {
-            let angle = Math.atan2(input.pointerPosition.y, input.pointerPosition.x) - Math.PI / 2 + this.cameraDirection.y;
+        this.inputDirection.set(input.pointerPosition.x, input.pointerPosition.y);
 
-            const angleDifference = Math.abs(player.rotation.y - angle);
-            if (angleDifference > 0.01) {
-                if (angleDifference > Math.PI) {
-                    angle -= Math.PI * 2;
-                }
-                player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, angle, 1 - Math.exp(-delta * this.maxRotationSpeed));
-                console.log("angle: " + THREE.MathUtils.radToDeg(angle).toFixed(2) + " player.rotation.y: " + THREE.MathUtils.radToDeg(player.rotation.y).toFixed(2));
-                player.updateMatrixWorld();
+        this.cameraDirection = this.engine.camera.getWorldDirection(this.cameraDirection);
+        this.cameraDirection.y = 0;
+        this.cameraDirection.normalize();
+
+        if (input.pointerDown) {
+            let desiredLocalCameraAngle = Math.atan2(this.inputDirection.y, this.inputDirection.x);
+
+            // get the right vector of the camera
+            this.tempVecA = this.cameraDirection.clone().cross(new THREE.Vector3(0, 1, 0));
+            const newDir = this.tempVecA;
+
+            newDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), desiredLocalCameraAngle);
+
+            // normalize to [0, 2π]
+            if (desiredLocalCameraAngle < 0) {
+                desiredLocalCameraAngle += 2 * Math.PI;
             }
 
-            player.getWorldDirection(this.playerDirection);
-            this.playerDirection.normalize();
+            player.rotation.y = this.lerpAngle(player.rotation.y, desiredLocalCameraAngle, 1 - Math.exp(-delta * this.maxRotationSpeed));
 
-            player.velocity.x = this.playerDirection.x * this.moveSpeed;
-            player.velocity.z = this.playerDirection.z * this.moveSpeed;
+            player.velocity.x = newDir.x * this.moveSpeed;
+            player.velocity.z = newDir.z * this.moveSpeed;
         } else {
             // When not moving, zero out horizontal velocity
             player.velocity.x = 0;
             player.velocity.z = 0;
         }
-    
+
         if (player.position.y < -25) {
             player.position.copy(PlayerSpawnPosition);
             player.velocity.set(0, 0, 0);  // Reset velocity too
