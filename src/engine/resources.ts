@@ -67,7 +67,8 @@ export class ResourceManager {
     async loadEssentialAssets(): Promise<void> {
         const essentialAssets = [
             '/models/tiramysu-land-base.glb',
-            '/models/tiramysu-land-navmesh.glb'
+            '/models/tiramysu-land-navmesh.glb',
+            '/models/tiramysu-ramy.glb'
         ];
 
         const loadPromises = essentialAssets.map(asset => this.loadModel(asset));

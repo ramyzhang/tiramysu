@@ -33,7 +33,7 @@ export class World {
         this.scene.add(ambientLight);
         
         // -------------- initialize entities --------------
-        this.player = new Player();
+        this.player = new Player(this.engine);
         this.entityRegistry.add(this.player);
         
         this.tiramysu = new Tiramysu(this.engine);
