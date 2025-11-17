@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Player } from '../entities/player.js';
-import { PlayerSpawnDirection } from '../constants.js';
+import { PlayerSpawnDirection, PlayerSpawnPosition } from '../constants.js';
 
 export enum CameraMode {
     Player = 'player',
@@ -10,14 +10,16 @@ export enum CameraMode {
 }
 
 export class CameraSystem extends System {
-    private cameraDirection: THREE.Vector3 = PlayerSpawnDirection;
     private player: Player | null = null;
     private currentMode: CameraMode = CameraMode.Player;
     private playerDirection: THREE.Vector3 = new THREE.Vector3();
-    
+    private cameraPosition: THREE.Vector3 = new THREE.Vector3();
+    private cameraDirection: THREE.Vector3 = new THREE.Vector3();
+
     // Player camera settings
-    private cameraYaw = 0;
-    private readonly cameraDistance = 6;
+    private readonly cameraHeight = 3;
+    private readonly cameraDistance = 10;
+    private readonly cameraResetSpeed = 0.5;
     
     // Free camera settings
     private freeCameraSpeed = 10.0;
@@ -28,6 +30,7 @@ export class CameraSystem extends System {
 
     constructor(engine: Engine) {
         super(engine);
+        this.engine.camera.position.copy(PlayerSpawnPosition.clone().sub(PlayerSpawnDirection.clone().multiplyScalar(this.cameraDistance)));
     }
 
     setPlayer(player: Player): void {
@@ -67,23 +70,17 @@ export class CameraSystem extends System {
 
     private updatePlayerCamera(delta: number): void {
         if (!this.player) return;
+        
+        this.cameraPosition.copy(this.engine.camera.position);
         this.engine.camera.getWorldDirection(this.cameraDirection);
         this.player.getWorldDirection(this.playerDirection);
-        this.cameraYaw = this.engine.camera.rotation.y;
-
-        // lerp the camera angle to the player direction extremely slowly)
-        if (this.cameraYaw < this.playerDirection.y) {
-            this.cameraYaw += delta * 0.01;
-        } else if (this.cameraYaw > this.playerDirection.y) {
-            this.cameraYaw -= delta * 0.01;
-        }
-
-        // get the difference in angle between the player direction and the camera direction
-        let finalDist = this.cameraDirection.clone().multiplyScalar(-this.cameraDistance);
-        const verticalDist = this.cameraDistance * Math.sin(THREE.MathUtils.degToRad(30));
-        finalDist.y = verticalDist;
         
-        this.engine.camera.rotation.set(0, this.cameraYaw, 0);
+        const newPosition = this.player.position.clone().sub(this.playerDirection.clone().multiplyScalar(this.cameraDistance));
+        newPosition.y += this.cameraHeight;
+
+        this.engine.camera.position.copy(this.player.position.clone().sub(this.cameraDirection.clone().multiplyScalar(this.cameraDistance)));
+        this.engine.camera.position.y = this.player.position.y + this.cameraHeight;
+        this.engine.camera.position.lerp(newPosition, delta * this.cameraResetSpeed);
         this.engine.camera.lookAt(this.player.position); 
     }
 

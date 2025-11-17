@@ -20,6 +20,15 @@ export class Player extends Entity {
         super(mesh, EntityType.Player);
         this.attach(mesh);
         this.position.copy(PlayerSpawnPosition);
+
+        const coneNose = new THREE.ConeGeometry(0.25, 0.5, 32);
+        const coneMaterial = new THREE.MeshLambertMaterial({ color: Colours.forestGreen, wireframe: true });
+        const cone = new THREE.Mesh(coneNose, coneMaterial);
+        this.add(cone);
+        cone.rotateX(Math.PI / 2);
+        cone.position.y = 0.5;
+        cone.position.z = 0.25;
+
         this.name = 'Player';
         for (const child of this.children) {
             child.layers.set(Layers.Player);

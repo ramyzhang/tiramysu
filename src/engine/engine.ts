@@ -25,7 +25,7 @@ export class Engine {
         // Initialize core Three.js components
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(
-            75, // fov
+            50, // fov
             window.innerWidth / window.innerHeight, // aspect ratio
             0.1, // near clipping plane
             1000 // far clipping plane

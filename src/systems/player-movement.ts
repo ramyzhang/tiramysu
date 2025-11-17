@@ -96,13 +96,14 @@ export class PlayerMovementSystem extends System {
             const newDir = this.tempVecA;
 
             newDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), desiredLocalCameraAngle);
+            newDir.normalize();
 
             // normalize to [0, 2π]
             if (desiredLocalCameraAngle < 0) {
                 desiredLocalCameraAngle += 2 * Math.PI;
             }
 
-            player.rotation.y = this.lerpAngle(player.rotation.y, desiredLocalCameraAngle, 1 - Math.exp(-delta * this.maxRotationSpeed));
+            player.lookAt(player.position.clone().add(newDir));
 
             player.velocity.x = newDir.x * this.moveSpeed;
             player.velocity.z = newDir.z * this.moveSpeed;
