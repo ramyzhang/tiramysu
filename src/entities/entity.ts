@@ -1,7 +1,5 @@
 import * as THREE from 'three';
 
-import { Colours } from '../constants.js';
-
 export class Entity extends THREE.Object3D {
     entityType: EntityType;
     collider: THREE.Object3D | null = null;
@@ -19,6 +17,7 @@ export enum EntityType {
     NPC,
     Player,
     Prop,
-    Environment
+    Environment,
+    Interactable
 }
 

@@ -17,9 +17,10 @@ export class CameraSystem extends System {
     private cameraDirection: THREE.Vector3 = new THREE.Vector3();
 
     // Player camera settings
-    private readonly cameraHeight = 1.5;
+    private readonly cameraHeight = 1.3;
     private readonly cameraDistance = 4;
     private readonly cameraResetSpeed = 0.5;
+    private readonly cameraFollowSpeed = 3;
     
     // Free camera settings
     private freeCameraSpeed = 10.0;
@@ -27,6 +28,9 @@ export class CameraSystem extends System {
     private freeCameraPosition = new THREE.Vector3(0, 10, 10);
     private freeCameraRotationY = 0;
     private lastCKeyState: boolean = false;
+
+    private tempVecA: THREE.Vector3 = new THREE.Vector3();
+    private tempVecB: THREE.Vector3 = new THREE.Vector3();
 
     constructor(engine: Engine) {
         super(engine);
@@ -75,12 +79,18 @@ export class CameraSystem extends System {
         this.engine.camera.getWorldDirection(this.cameraDirection);
         this.player.getWorldDirection(this.playerDirection);
         
-        const newPosition = this.player.position.clone().sub(this.playerDirection.clone().multiplyScalar(this.cameraDistance));
+        const newPosition = this.tempVecA;
+        newPosition.copy(this.player.position).sub(this.playerDirection.clone().multiplyScalar(this.cameraDistance));
         newPosition.y += this.cameraHeight;
 
-        this.engine.camera.position.copy(this.player.position.clone().sub(this.cameraDirection.clone().multiplyScalar(this.cameraDistance)));
-        this.engine.camera.position.y = this.player.position.y + this.cameraHeight;
-        this.engine.camera.position.lerp(newPosition, delta * this.cameraResetSpeed);
+        const targetPlayerFollowPosition = this.tempVecB;
+        targetPlayerFollowPosition.copy(this.player.position).sub(this.cameraDirection.clone().multiplyScalar(this.cameraDistance));
+        
+        this.engine.camera.position.lerp(targetPlayerFollowPosition, delta * this.cameraFollowSpeed); // Follow the player
+        this.engine.camera.position.lerp(newPosition, delta * this.cameraResetSpeed); // slowly reset to the same direction as the player
+
+        this.engine.camera.position.y = THREE.MathUtils.lerp(this.engine.camera.position.y, newPosition.y, delta * this.cameraFollowSpeed);
+
         this.engine.camera.lookAt(this.player.position); 
     }
 

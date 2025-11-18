@@ -38,7 +38,7 @@ export class Tiramysu extends Entity {
         this.name = 'Tiramysu';
         this.static = true;
         for (const child of this.children) {
-            child.layers.set(Layers.Environment);
+            child.layers.enable(Layers.Environment);
         }
     }
 }

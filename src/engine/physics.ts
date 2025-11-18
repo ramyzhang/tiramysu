@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { Engine } from './engine.js';
 import { Entity, EntityType } from '../entities/entity.js';
 import { Player } from '../entities/player.js';
+import { Layers } from '../constants.js';
+import { Interactable } from '../entities/interactable.js';
 
 export class Physics {
     private engine: Engine;
@@ -16,10 +18,13 @@ export class Physics {
     private tempMat: THREE.Matrix4 = new THREE.Matrix4();
     private tempAABB: THREE.Box3 = new THREE.Box3();
 
+    private raycaster: THREE.Raycaster;
+
     constructor(_engine: Engine) {
         this.engine = _engine;
         this.player = null;
         this.environment = null;
+        this.raycaster = new THREE.Raycaster();
     }
 
     public init(): void {
@@ -31,6 +36,8 @@ export class Physics {
                 this.environment = e.collider as THREE.Mesh;
             }
         }
+
+        this.raycaster.layers.enableAll();
     }
 
     update(delta: number): void {
@@ -51,7 +58,7 @@ export class Physics {
     }
 
     gravity(delta: number): void {
-        this.player!.velocity.y -= 9.8 * delta;
+        this.player!.velocity.y -= 9.8 * delta * (this.player as Player).weight;
     }
 
     checkCollisions(): void {  // Return void, modify tempLine directly
@@ -81,6 +88,15 @@ export class Physics {
                 }
             }
         });
+
+        for (const e of this.engine.entityRegistry.getEntities()) {
+            if (e.entityType === EntityType.Interactable) {
+                const interactable = e as Interactable;
+                if ((interactable.collider! as THREE.Box3Helper).box.intersectsBox(this.tempAABB)) {
+                    console.log("interactable", interactable.name);
+                }
+            }
+        }
     }
     
     resolveCollisions(delta: number): void {
@@ -92,10 +108,18 @@ export class Physics {
     
         const hadCollision = deltaVector.length() > 0.005;
 
-        if (hadCollision) {
-            // Only update ground state if we had a collision
-            this.isOnGround = deltaVector.y > Math.abs(delta * this.player!.velocity.y * 0.25);
+        // Only update ground state if we had a collision
+        // raycast down from the player's position to check if we are on the ground
+        this.raycaster.set(this.player!.position, this.player!.position.clone().add(new THREE.Vector3(0, -3, 0)));
+        const intersects = this.raycaster.intersectObjects([this.environment!]);
+        if (intersects.length > 0) {
+            console.log("intersects", intersects[0]);
+            this.isOnGround = true;
+        } else {
+            this.isOnGround = false;
+        }
 
+        if (hadCollision) {
             const offset = Math.max(0, deltaVector.length() - 1e-5);
             deltaVector.normalize().multiplyScalar(offset);
 

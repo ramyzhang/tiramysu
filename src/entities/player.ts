@@ -11,6 +11,7 @@ export class Capsule {
 
 export class Player extends Entity {    
     capsule: Capsule = new Capsule();
+    weight: number = 2;
 
     constructor(engine: Engine) {
         // Load the player model
@@ -30,15 +31,11 @@ export class Player extends Entity {
         super(mesh as THREE.Mesh, EntityType.Player);
         this.attach(mesh);
 
-        // const cylinder = new THREE.CapsuleGeometry(this.capsule.radius, this.capsule.lineSegment.distance(), 4, 10);
-        // const material = new THREE.MeshLambertMaterial({ color: Colours.rose, wireframe: true });
-        // this.add(new THREE.Mesh(cylinder, material));
-
         this.position.copy(PlayerSpawnPosition);
 
         this.name = 'Player';
         for (const child of this.children) {
-            child.layers.set(Layers.Player);
+            child.layers.enable(Layers.Player);
         }
         this.lookAt(PlayerSpawnPosition.add(PlayerSpawnDirection));
     }

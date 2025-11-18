@@ -5,6 +5,7 @@ import { EntityRegistry } from '../entities/entity-registry.js';
 import { Physics } from './physics.js';
 import { ResourceManager } from './resources.js';
 import { InputManager } from './input.js';
+import { Layers } from '../constants.js';
 
 export class Engine {
     private renderer: THREE.WebGLRenderer;
@@ -43,10 +44,10 @@ export class Engine {
         this.world = new World(this);
         this.physics = new Physics(this);
 
-        // Handle window resize (InputManager tracks size, but we need to update camera/renderer)
+        // Handle window resize
         window.addEventListener('resize', () => this.onResize());
         
-        // Handle window focus (InputManager tracks focus, but we need to control clock)
+        // Handle window focus
         window.addEventListener('blur', () => {
             this.clock.stop();
         });
