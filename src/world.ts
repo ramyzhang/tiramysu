@@ -6,6 +6,7 @@ import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
 import { PlayerMovementSystem } from './systems/player-movement.js';
 import { InteractionSystem } from './systems/interaction.js';
+import { DialogueSystem } from './systems/dialogue.js';
 
 export class World {   
     private engine: Engine;
@@ -18,6 +19,7 @@ export class World {
     private debugUI!: DebugUI;
     private playerMovementSystem!: PlayerMovementSystem;
     public interactionSystem!: InteractionSystem;
+    public dialogueSystem!: DialogueSystem;
 
     constructor(_engine: Engine) {
         this.engine = _engine;
@@ -53,6 +55,9 @@ export class World {
 
         // -------------- initialize interaction system --------------
         this.interactionSystem = new InteractionSystem(this.engine);
+
+        // -------------- initialize dialogue system --------------
+        this.dialogueSystem = new DialogueSystem(this.engine);
     }
 
     update(delta: number): void {
@@ -67,5 +72,8 @@ export class World {
 
         // Update debug UI
         this.debugUI.update(delta);
+
+        // Update dialogue system
+        this.dialogueSystem.update(delta);
     }
 }

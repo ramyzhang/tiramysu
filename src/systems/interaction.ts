@@ -3,12 +3,26 @@ import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Interactable } from '../entities/interactable.js';
 import { Layers, Colours } from '../constants.js';
+import { EventEmitter } from '../utils/event-emitter.js';
+
+/**
+ * Interaction event types.
+ */
+export interface InteractionEvents {
+    /**
+     * Emitted when an interactable is clicked.
+     */
+    'interactableClicked': {
+        interactable: Interactable;
+    };
+}
 
 /**
  * System that handles interactions with interactable entities.
  * Listens to physics collision events and handles click interactions.
  */
-export class InteractionSystem extends System {
+export class InteractionSystem extends EventEmitter<InteractionEvents> {
+    protected engine: Engine;
     private collidingInteractables: Set<Interactable> = new Set();
     private raycaster: THREE.Raycaster = new THREE.Raycaster();
     private mouse: THREE.Vector2 = new THREE.Vector2();
@@ -16,7 +30,8 @@ export class InteractionSystem extends System {
     private wasPointerDown: boolean = false;
 
     constructor(engine: Engine) {
-        super(engine);
+        super();
+        this.engine = engine;
         this.setupPhysicsListener();
     }
 
@@ -72,6 +87,10 @@ export class InteractionSystem extends System {
                 if (foundInteractable) {
                     this.isInteracting = true;
                     this.handleInteraction(foundInteractable);
+                    // Emit event for other systems (like dialogue)
+                    this.emit('interactableClicked', {
+                        interactable: foundInteractable
+                    });
                 }
             }
             

@@ -88,11 +88,13 @@ export class PlayerMovementSystem extends System {
         this.cameraDirection.y = 0;
         this.cameraDirection.normalize();
 
-        // Check if player is interacting - if so, don't process movement
+        // Check if player is interacting or dialogue is active - if so, don't process movement
         const interactionSystem = this.engine.world.interactionSystem;
-        if (interactionSystem && interactionSystem.isCurrentlyInteracting()) {
-            // Player is clicking on an interactable, don't process movement
-            console.log("nya");
+        const dialogueSystem = this.engine.world.dialogueSystem;
+        
+        if ((interactionSystem && interactionSystem.isCurrentlyInteracting()) ||
+            (dialogueSystem && dialogueSystem.isActive())) {
+            // Player is interacting or in dialogue, don't process movement
             player.velocity.x = 0;
             player.velocity.z = 0;
             return;
