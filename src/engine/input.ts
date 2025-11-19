@@ -10,7 +10,6 @@ export class InputManager {
     public pointerDown: boolean = false;
     public wasPointerDown: boolean = false;
     public pointerPosition: THREE.Vector2 = new THREE.Vector2();
-    public pointerPositionNormalized: THREE.Vector2 = new THREE.Vector2();
 
     // Keyboard state
     public keys: { [key: string]: boolean } = {};
@@ -97,9 +96,7 @@ export class InputManager {
      * Updates pointer position from a pointer event.
      */
     private updatePointerPosition(event: PointerEvent): void {
-        const { pointerX, pointerY } = updatePointerPosition(event);
-        this.pointerPositionNormalized.set(pointerX, pointerY);
-        this.pointerPosition.set(pointerX, -pointerY);
+        this.pointerPosition = updatePointerPosition(event);
     }
 
     /**

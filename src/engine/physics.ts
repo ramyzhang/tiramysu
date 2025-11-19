@@ -5,8 +5,23 @@ import { Entity, EntityType } from '../entities/entity.js';
 import { Player } from '../entities/player.js';
 import { Layers } from '../constants.js';
 import { Interactable } from '../entities/interactable.js';
+import { EventEmitter } from '../utils/event-emitter.js';
 
-export class Physics {
+/**
+ * Physics event types that can be emitted.
+ */
+export interface PhysicsEvents {
+    /**
+     * Emitted when the player collides with an interactable entity.
+     */
+    'interactableCollision': {
+        interactable: Interactable;
+        player: Entity;
+        isColliding: boolean; // true when entering collision, false when exiting
+    };
+}
+
+export class Physics extends EventEmitter<PhysicsEvents> {
     private engine: Engine;
     private player: Entity | null = null;
     private environment: THREE.Mesh | null = null;
@@ -17,10 +32,14 @@ export class Physics {
     private tempLine: THREE.Line3 = new THREE.Line3();
     private tempMat: THREE.Matrix4 = new THREE.Matrix4();
     private tempAABB: THREE.Box3 = new THREE.Box3();
+    private tempSphere: THREE.Sphere = new THREE.Sphere();
 
     private raycaster: THREE.Raycaster;
 
+    private collidingInteractables: Set<Interactable> = new Set();
+
     constructor(_engine: Engine) {
+        super();
         this.engine = _engine;
         this.player = null;
         this.environment = null;
@@ -89,11 +108,32 @@ export class Physics {
             }
         });
 
+        // Check for interactable collisions
         for (const e of this.engine.entityRegistry.getEntities()) {
             if (e.entityType === EntityType.Interactable) {
                 const interactable = e as Interactable;
-                if ((interactable.collider! as THREE.Box3Helper).box.intersectsBox(this.tempAABB)) {
-                    console.log("interactable", interactable.name);
+                this.tempSphere.copy(interactable.sphere);
+                this.tempSphere.applyMatrix4(interactable.matrixWorld);
+                
+                const isColliding = this.tempAABB.intersectsSphere(this.tempSphere);
+                const wasColliding = this.collidingInteractables.has(interactable);
+                
+                if (isColliding && !wasColliding) {
+                    // Entering collision
+                    this.collidingInteractables.add(interactable);
+                    this.emit('interactableCollision', {
+                        interactable,
+                        player: this.player!,
+                        isColliding: true
+                    });
+                } else if (!isColliding && wasColliding) {
+                    // Exiting collision
+                    this.collidingInteractables.delete(interactable);
+                    this.emit('interactableCollision', {
+                        interactable,
+                        player: this.player!,
+                        isColliding: false
+                    });
                 }
             }
         }

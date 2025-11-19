@@ -82,11 +82,21 @@ export class PlayerMovementSystem extends System {
         if (!player) return;
     
         const input = this.engine.input;
-        this.inputDirection.set(input.pointerPosition.x, input.pointerPosition.y);
+        this.inputDirection.copy(input.pointerPosition);
 
         this.cameraDirection = this.engine.camera.getWorldDirection(this.cameraDirection);
         this.cameraDirection.y = 0;
         this.cameraDirection.normalize();
+
+        // Check if player is interacting - if so, don't process movement
+        const interactionSystem = this.engine.world.interactionSystem;
+        if (interactionSystem && interactionSystem.isCurrentlyInteracting()) {
+            // Player is clicking on an interactable, don't process movement
+            console.log("nya");
+            player.velocity.x = 0;
+            player.velocity.z = 0;
+            return;
+        }
 
         if (input.pointerDown) {
             let desiredLocalCameraAngle = Math.atan2(this.inputDirection.y, this.inputDirection.x);

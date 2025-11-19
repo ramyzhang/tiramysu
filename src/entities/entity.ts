@@ -8,7 +8,7 @@ export class Entity extends THREE.Object3D {
 
     constructor(mesh: THREE.Mesh, entityType: EntityType) {
         super();
-        this.copy(mesh);
+        this.attach(mesh);
         this.entityType = entityType;
     }
 }

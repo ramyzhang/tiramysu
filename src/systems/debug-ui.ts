@@ -104,9 +104,7 @@ export class DebugUI extends System {
      */
     private handleRightClick(event: PointerEvent) {
         // Calculate mouse coordinates in normalized device coordinates (-1 to +1)
-        const { pointerX, pointerY } = updatePointerPosition(event);
-        this.mouse.x = pointerX;
-        this.mouse.y = pointerY;
+        this.mouse = updatePointerPosition(event);
 
         this.raycaster.layers.enable(Layers.Player);
         this.raycaster.layers.enable(Layers.Environment);

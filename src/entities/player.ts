@@ -29,7 +29,6 @@ export class Player extends Entity {
         }
 
         super(mesh as THREE.Mesh, EntityType.Player);
-        this.attach(mesh);
 
         this.position.copy(PlayerSpawnPosition);
 
