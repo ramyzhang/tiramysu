@@ -18,7 +18,7 @@ export class CameraSystem extends System {
 
     // Player camera settings
     private readonly cameraHeight = 1.3;
-    private readonly cameraDistance = 4;
+    private readonly cameraDistance = 5;
     private readonly cameraResetSpeed = 0.5;
     private readonly cameraFollowSpeed = 3;
     

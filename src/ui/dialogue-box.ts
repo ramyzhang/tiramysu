@@ -2,34 +2,33 @@ import { DialogueMessage } from '../dialogue/dialogue-script.js';
 
 /**
  * Reusable dialogue box UI component.
- * Creates and manages a cute dialogue box that displays messages.
+ * Creates and manages a chat-like dialogue interface similar to iMessage/Messenger.
  */
 export class DialogueBox {
     private container: HTMLDivElement;
-    private contentWrapper: HTMLDivElement;
+    private messagesContainer: HTMLDivElement;
     private portraitElement: HTMLImageElement;
-    private nameElement: HTMLDivElement;
-    private messageElement: HTMLDivElement;
-    private continueButton: HTMLButtonElement;
+    private typingIndicator: HTMLDivElement;
+    private exitButton: HTMLButtonElement;
     private isVisible: boolean = false;
-    private onContinueCallback: (() => void) | null = null;
+    private onExitCallback: (() => void) | null = null;
     private portraitCache: Map<string, string> = new Map();
+    private currentSpeakerName: string = '';
+    private messageElements: HTMLDivElement[] = [];
 
     constructor() {
-        // Create main container
+        // Create main container (chat-like interface - transparent background)
         this.container = document.createElement('div');
         this.container.style.position = 'fixed';
         this.container.style.bottom = '40px';
         this.container.style.left = '50%';
         this.container.style.transform = 'translateX(-50%)';
-        this.container.style.width = '600px';
-        this.container.style.maxWidth = 'calc(100vw - 40px)'; // 20px margin on each side (20px left + 20px right)
-        this.container.style.boxSizing = 'border-box'; // Include padding in width calculation
-        this.container.style.background = 'linear-gradient(135deg, #FFE5B4 0%, #FFB6C1 50%, #FFD1DC 100%)';
-        this.container.style.padding = '28px 32px';
-        this.container.style.borderRadius = '28px';
-        this.container.style.boxShadow = '0 12px 40px rgba(255, 107, 181, 0.4), 0 0 0 4px rgba(255, 255, 255, 0.6), inset 0 2px 8px rgba(255, 255, 255, 0.3)';
-        this.container.style.border = '2px solid rgba(255, 255, 255, 0.8)';
+        this.container.style.width = '500px';
+        this.container.style.maxWidth = 'calc(100vw - 40px)';
+        this.container.style.maxHeight = '60vh';
+        this.container.style.boxSizing = 'border-box';
+        this.container.style.background = 'transparent';
+        this.container.style.padding = '20px';
         this.container.style.fontFamily = "'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
         this.container.style.zIndex = '100000';
         this.container.style.opacity = '0';
@@ -38,184 +37,324 @@ export class DialogueBox {
         this.container.style.pointerEvents = 'none';
         this.container.style.userSelect = 'none';
         this.container.style.display = 'flex';
-        this.container.style.gap = '20px';
-        this.container.style.alignItems = 'flex-start';
+        this.container.style.flexDirection = 'column';
+        this.container.style.gap = '12px';
 
-        // Create portrait element
+        // Create portrait element (avatar)
         this.portraitElement = document.createElement('img');
-        this.portraitElement.style.width = '110px';
-        this.portraitElement.style.height = '110px';
-        this.portraitElement.style.borderRadius = '24px';
+        this.portraitElement.style.width = '50px';
+        this.portraitElement.style.height = '50px';
+        this.portraitElement.style.borderRadius = '50%';
         this.portraitElement.style.objectFit = 'cover';
-        this.portraitElement.style.border = '4px solid rgba(255, 255, 255, 0.95)';
-        this.portraitElement.style.boxShadow = '0 6px 20px rgba(255, 107, 181, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.5)';
+        this.portraitElement.style.border = '3px solid rgba(255, 255, 255, 0.95)';
+        this.portraitElement.style.boxShadow = '0 4px 12px rgba(255, 107, 181, 0.3)';
         this.portraitElement.style.flexShrink = '0';
         this.portraitElement.style.background = 'rgba(255, 255, 255, 0.4)';
-        this.portraitElement.style.transition = 'transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
-        this.container.appendChild(this.portraitElement);
+        this.portraitElement.style.transition = 'transform 0.2s ease';
+        this.portraitElement.style.display = 'none'; // Will be shown in message rows
 
-        // Create content wrapper for name and message
-        this.contentWrapper = document.createElement('div');
-        this.contentWrapper.style.flex = '1';
-        this.contentWrapper.style.display = 'flex';
-        this.contentWrapper.style.flexDirection = 'column';
-        this.container.appendChild(this.contentWrapper);
-
-        // Create name element
-        this.nameElement = document.createElement('div');
-        this.nameElement.style.fontSize = '22px';
-        this.nameElement.style.fontWeight = '700';
-        this.nameElement.style.color = '#8B4513';
-        this.nameElement.style.marginBottom = '14px';
-        this.nameElement.style.textShadow = '0 2px 4px rgba(255, 255, 255, 0.6)';
-        this.nameElement.style.letterSpacing = '0.5px';
-        this.contentWrapper.appendChild(this.nameElement);
-
-        // Create message element
-        this.messageElement = document.createElement('div');
-        this.messageElement.style.fontSize = '17px';
-        this.messageElement.style.color = '#5A4A4A';
-        this.messageElement.style.lineHeight = '1.7';
-        this.messageElement.style.marginBottom = '18px';
-        this.messageElement.style.minHeight = '60px';
-        this.messageElement.style.textShadow = '0 1px 2px rgba(255, 255, 255, 0.4)';
-        this.contentWrapper.appendChild(this.messageElement);
-
-        // Create continue button
-        this.continueButton = document.createElement('button');
-        this.continueButton.textContent = 'Continue →';
-        this.continueButton.style.width = '100%';
-        this.continueButton.style.padding = '14px 24px';
-        this.continueButton.style.background = 'linear-gradient(135deg, #FFFFFF 0%, #FFF0F5 100%)';
-        this.continueButton.style.border = '3px solid #FFB6C1';
-        this.continueButton.style.borderRadius = '16px';
-        this.continueButton.style.fontSize = '17px';
-        this.continueButton.style.fontWeight = '700';
-        this.continueButton.style.color = '#8B4513';
-        this.continueButton.style.cursor = 'pointer';
-        this.continueButton.style.fontFamily = 'inherit';
-        this.continueButton.style.boxShadow = '0 4px 12px rgba(255, 182, 193, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.8)';
-        this.continueButton.style.position = 'relative';
-        this.continueButton.style.overflow = 'hidden';
+        // Create messages container (no scrolling needed - only 3 messages visible)
+        this.messagesContainer = document.createElement('div');
+        this.messagesContainer.style.flex = '1';
+        this.messagesContainer.style.display = 'flex';
+        this.messagesContainer.style.flexDirection = 'column';
+        this.messagesContainer.style.gap = '10px';
+        this.messagesContainer.style.overflow = 'hidden';
+        this.messagesContainer.style.justifyContent = 'flex-end';
         
-        // Add bouncy animation using CSS keyframes
-        this.setupBouncyAnimation();
+        this.container.appendChild(this.messagesContainer);
+
+        // Create typing indicator (structured like a message row)
+        this.typingIndicator = document.createElement('div');
+        this.typingIndicator.style.display = 'none';
+        this.typingIndicator.style.flexDirection = 'row';
+        this.typingIndicator.style.gap = '10px';
+        this.typingIndicator.style.alignItems = 'flex-start';
+        this.setupTypingIndicator();
+        this.messagesContainer.appendChild(this.typingIndicator);
+
+        // Create exit button (hidden by default, shown at end)
+        this.exitButton = document.createElement('button');
+        this.exitButton.textContent = 'Exit';
+        this.exitButton.style.width = '100%';
+        this.exitButton.style.padding = '12px 24px';
+        this.exitButton.style.background = 'linear-gradient(135deg, #FFFFFF 0%, #FFF0F5 100%)';
+        this.exitButton.style.border = '2px solid #FFB6C1';
+        this.exitButton.style.borderRadius = '16px';
+        this.exitButton.style.fontSize = '16px';
+        this.exitButton.style.fontWeight = '600';
+        this.exitButton.style.color = '#8B4513';
+        this.exitButton.style.cursor = 'pointer';
+        this.exitButton.style.fontFamily = 'inherit';
+        this.exitButton.style.boxShadow = '0 4px 12px rgba(255, 182, 193, 0.4)';
+        this.exitButton.style.display = 'none';
+        this.exitButton.style.marginTop = '8px';
+        this.exitButton.style.transition = 'all 0.2s ease';
         
-        // Button hover effects
-        this.continueButton.addEventListener('mouseenter', () => {
-            this.continueButton.style.background = 'linear-gradient(135deg, #FFFFFF 0%, #FFE4E1 100%)';
-            this.continueButton.style.borderColor = '#FF91A4';
-            this.continueButton.style.boxShadow = '0 6px 20px rgba(255, 182, 193, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.9)';
-            this.continueButton.style.animation = 'dialogue-bounce-hover 1.5s ease-in-out infinite, dialogue-glow 2s ease-in-out infinite';
-        });
-        this.continueButton.addEventListener('mouseleave', () => {
-            this.continueButton.style.background = 'linear-gradient(135deg, #FFFFFF 0%, #FFF0F5 100%)';
-            this.continueButton.style.borderColor = '#FFB6C1';
-            this.continueButton.style.boxShadow = '0 4px 12px rgba(255, 182, 193, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.8)';
-            this.continueButton.style.animation = 'dialogue-bounce 2s ease-in-out infinite, dialogue-glow 2s ease-in-out infinite';
+        this.exitButton.addEventListener('mouseenter', () => {
+            this.exitButton.style.background = 'linear-gradient(135deg, #FFFFFF 0%, #FFE4E1 100%)';
+            this.exitButton.style.borderColor = '#FF91A4';
+            this.exitButton.style.transform = 'translateY(-2px)';
+            this.exitButton.style.boxShadow = '0 6px 20px rgba(255, 182, 193, 0.6)';
         });
         
-        this.continueButton.addEventListener('click', () => {
-            // Temporarily pause animation and add click bounce
-            const originalAnimation = this.continueButton.style.animation;
-            this.continueButton.style.animation = 'dialogue-click-bounce 0.4s ease-out';
-            setTimeout(() => {
-                this.continueButton.style.animation = originalAnimation;
-            }, 400);
-            
-            if (this.onContinueCallback) {
-                this.onContinueCallback();
+        this.exitButton.addEventListener('mouseleave', () => {
+            this.exitButton.style.background = 'linear-gradient(135deg, #FFFFFF 0%, #FFF0F5 100%)';
+            this.exitButton.style.borderColor = '#FFB6C1';
+            this.exitButton.style.transform = 'translateY(0)';
+            this.exitButton.style.boxShadow = '0 4px 12px rgba(255, 182, 193, 0.4)';
+        });
+        
+        this.exitButton.addEventListener('click', () => {
+            if (this.onExitCallback) {
+                this.onExitCallback();
             }
         });
 
-        this.contentWrapper.appendChild(this.continueButton);
+        this.container.appendChild(this.exitButton);
         document.body.appendChild(this.container);
     }
 
     /**
-     * Sets up the bouncy animation for the continue button using CSS keyframes.
+     * Sets up the typing indicator with three animated dots.
      */
-    private setupBouncyAnimation(): void {
+    private setupTypingIndicator(): void {
         // Check if keyframes already exist
-        if (document.getElementById('dialogue-bounce-keyframes')) {
+        if (document.getElementById('dialogue-typing-keyframes')) {
             return;
         }
 
         // Create style element with keyframes
         const style = document.createElement('style');
-        style.id = 'dialogue-bounce-keyframes';
+        style.id = 'dialogue-typing-keyframes';
         style.textContent = `
-            @keyframes dialogue-bounce {
-                0%, 100% {
-                    transform: translateY(0) scale(1);
-                }
-                50% {
-                    transform: translateY(-5px) scale(1.03);
-                }
-            }
-            
-            @keyframes dialogue-bounce-hover {
-                0%, 100% {
-                    transform: translateY(-2px) scale(1.05);
-                }
-                50% {
-                    transform: translateY(-7px) scale(1.08);
-                }
-            }
-            
-            @keyframes dialogue-click-bounce {
-                0% {
-                    transform: translateY(0) scale(1);
+            @keyframes dialogue-typing-dot {
+                0%, 60%, 100% {
+                    transform: translateY(0);
+                    opacity: 0.7;
                 }
                 30% {
-                    transform: translateY(0) scale(0.92);
-                }
-                60% {
-                    transform: translateY(-8px) scale(1.1);
-                }
-                100% {
-                    transform: translateY(0) scale(1);
-                }
-            }
-            
-            @keyframes dialogue-glow {
-                0%, 100% {
-                    box-shadow: 0 4px 12px rgba(255, 182, 193, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.8);
-                }
-                50% {
-                    box-shadow: 0 6px 18px rgba(255, 182, 193, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.9);
+                    transform: translateY(-10px);
+                    opacity: 1;
                 }
             }
         `;
         document.head.appendChild(style);
 
-        // Apply the bouncy animation
-        this.continueButton.style.animation = 'dialogue-bounce 2s ease-in-out infinite, dialogue-glow 2s ease-in-out infinite';
-        this.continueButton.style.transition = 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+        // Create typing indicator structure (avatar + bubble)
+        this.typingIndicator.innerHTML = '';
+        this.typingIndicator.style.display = 'flex';
+        
+        // Create placeholder avatar (will use current portrait)
+        const typingAvatar = document.createElement('div');
+        typingAvatar.style.width = '40px';
+        typingAvatar.style.height = '40px';
+        typingAvatar.style.borderRadius = '50%';
+        typingAvatar.style.border = '2px solid rgba(255, 255, 255, 0.95)';
+        typingAvatar.style.boxShadow = '0 2px 8px rgba(255, 107, 181, 0.2)';
+        typingAvatar.style.flexShrink = '0';
+        typingAvatar.style.background = 'rgba(255, 255, 255, 0.4)';
+        this.typingIndicator.appendChild(typingAvatar);
+        
+        // Create typing bubble with gradient
+        const typingBubble = document.createElement('div');
+        typingBubble.style.padding = '12px 16px';
+        typingBubble.style.background = 'linear-gradient(135deg, rgba(255, 229, 180, 0.9) 0%, rgba(255, 182, 193, 0.9) 50%, rgba(255, 209, 220, 0.9) 100%)';
+        typingBubble.style.borderRadius = '18px';
+        typingBubble.style.boxShadow = '0 2px 8px rgba(255, 107, 181, 0.3)';
+        typingBubble.style.width = 'fit-content';
+        
+        // Create three dots
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('span');
+            dot.textContent = '●';
+            dot.style.display = 'inline-block';
+            dot.style.margin = '0 2px';
+            dot.style.fontSize = '12px';
+            dot.style.color = '#8B4513';
+            dot.style.animation = `dialogue-typing-dot 1.4s ease-in-out infinite`;
+            dot.style.animationDelay = `${i * 0.2}s`;
+            typingBubble.appendChild(dot);
+        }
+        
+        this.typingIndicator.appendChild(typingBubble);
+        
+        // Store avatar reference to update it when showing
+        (this.typingIndicator as any).avatarElement = typingAvatar;
     }
 
+
     /**
-     * Shows the dialogue box with a message.
+     * Shows the dialogue box and initializes a new conversation.
      */
     public show(message: DialogueMessage, speakerName: string): void {
-        this.nameElement.textContent = message.speaker || speakerName;
-        this.messageElement.textContent = message.text;
+        // Clear previous messages
+        this.clearMessages();
+        
+        // Store speaker name for avatar
+        this.currentSpeakerName = message.speaker || speakerName;
         
         // Set portrait based on emotion
         const portraitUrl = this.getPortraitForEmotion(message.emotion || 'default');
         this.portraitElement.src = portraitUrl;
         
-        // Add a subtle bounce to the portrait when showing
-        this.portraitElement.style.transform = 'scale(0.9)';
-        setTimeout(() => {
-            this.portraitElement.style.transform = 'scale(1)';
-        }, 50);
-
+        // Add first message
+        this.addMessage(message);
+        
+        // Show the dialogue box
         this.isVisible = true;
         this.container.style.pointerEvents = 'auto';
         this.container.style.opacity = '1';
         this.container.style.transform = 'translateX(-50%) translateY(0)';
+        
+        // Hide exit button initially
+        this.exitButton.style.display = 'none';
     }
+
+    /**
+     * Adds a new message to the chat history.
+     * Only keeps the 3 most recent messages visible.
+     */
+    public addMessage(message: DialogueMessage): void {
+        // Hide typing indicator
+        this.typingIndicator.style.display = 'none';
+        
+        // Remove oldest messages if we have more than 2 (keeping 3 total including new one)
+        while (this.messageElements.length >= 3) {
+            const oldestMessage = this.messageElements.shift();
+            if (oldestMessage && oldestMessage.parentElement) {
+                oldestMessage.parentElement.removeChild(oldestMessage);
+            }
+        }
+        
+        // Update opacity of existing messages (make them more transparent)
+        this.updateMessageOpacities();
+        
+        // Create message row
+        const messageRow = document.createElement('div');
+        messageRow.style.display = 'flex';
+        messageRow.style.gap = '10px';
+        messageRow.style.alignItems = 'flex-start';
+        messageRow.style.animation = 'fadeInUp 0.3s ease-out';
+        messageRow.style.opacity = '1';
+        messageRow.style.transition = 'opacity 0.5s ease-out';
+        
+        // Create avatar for this message
+        const avatar = document.createElement('img');
+        avatar.src = this.getPortraitForEmotion(message.emotion || 'default');
+        avatar.style.width = '40px';
+        avatar.style.height = '40px';
+        avatar.style.borderRadius = '50%';
+        avatar.style.objectFit = 'cover';
+        avatar.style.border = '2px solid rgba(255, 255, 255, 0.95)';
+        avatar.style.boxShadow = '0 2px 8px rgba(255, 107, 181, 0.2)';
+        avatar.style.flexShrink = '0';
+        messageRow.appendChild(avatar);
+        
+        // Create message bubble with gradient background
+        const messageBubble = document.createElement('div');
+        messageBubble.style.flex = '1';
+        messageBubble.style.padding = '12px 16px';
+        messageBubble.style.background = 'linear-gradient(135deg, rgba(255, 229, 180, 0.95) 0%, rgba(255, 182, 193, 0.95) 50%, rgba(255, 209, 220, 0.95) 100%)';
+        messageBubble.style.borderRadius = '18px';
+        messageBubble.style.boxShadow = '0 2px 8px rgba(255, 107, 181, 0.3)';
+        messageBubble.style.fontSize = '15px';
+        messageBubble.style.color = '#5A4A4A';
+        messageBubble.style.lineHeight = '1.5';
+        messageBubble.style.wordWrap = 'break-word';
+        messageBubble.textContent = message.text;
+        messageRow.appendChild(messageBubble);
+        
+        // Add to messages container
+        this.messagesContainer.insertBefore(messageRow, this.typingIndicator);
+        this.messageElements.push(messageRow);
+        
+        // Add fade-in animation
+        if (!document.getElementById('dialogue-fade-animation')) {
+            const style = document.createElement('style');
+            style.id = 'dialogue-fade-animation';
+            style.textContent = `
+                @keyframes fadeInUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    /**
+     * Updates the opacity of existing messages based on their age.
+     * Newest message: 1.0, second: 0.7, third: 0.4
+     */
+    private updateMessageOpacities(): void {
+        const totalMessages = this.messageElements.length;
+        this.messageElements.forEach((messageRow, index) => {
+            // Calculate position from newest (1 = newest, higher = older)
+            // index 0 is oldest, index (totalMessages-1) is newest
+            const positionFromNewest = totalMessages - index;
+            let opacity = 1.0;
+            
+            if (positionFromNewest === 1) {
+                opacity = 1.0; // Newest message - fully opaque
+            } else if (positionFromNewest === 2) {
+                opacity = 0.7; // Second newest
+            } else if (positionFromNewest === 3) {
+                opacity = 0.4; // Third newest (oldest visible)
+            }
+            
+            messageRow.style.opacity = opacity.toString();
+        });
+    }
+
+    /**
+     * Shows the typing indicator.
+     */
+    public showTypingIndicator(): void {
+        // Update avatar in typing indicator to match current speaker
+        const avatarElement = (this.typingIndicator as any).avatarElement;
+        if (avatarElement && this.portraitElement.src) {
+            avatarElement.style.backgroundImage = `url(${this.portraitElement.src})`;
+            avatarElement.style.backgroundSize = 'cover';
+            avatarElement.style.backgroundPosition = 'center';
+        }
+        
+        this.typingIndicator.style.display = 'flex';
+    }
+
+    /**
+     * Hides the typing indicator.
+     */
+    public hideTypingIndicator(): void {
+        this.typingIndicator.style.display = 'none';
+    }
+
+    /**
+     * Shows the exit button (called when dialogue is finished).
+     */
+    public showExitButton(): void {
+        this.exitButton.style.display = 'block';
+        this.hideTypingIndicator();
+    }
+
+    /**
+     * Clears all messages from the chat.
+     */
+    private clearMessages(): void {
+        this.messageElements.forEach(el => {
+            if (el.parentElement) {
+                el.parentElement.removeChild(el);
+            }
+        });
+        this.messageElements = [];
+    }
+
 
     /**
      * Hides the dialogue box.
@@ -225,13 +364,16 @@ export class DialogueBox {
         this.container.style.opacity = '0';
         this.container.style.transform = 'translateX(-50%) translateY(20px)';
         this.container.style.pointerEvents = 'none';
+        this.clearMessages();
+        this.hideTypingIndicator();
+        this.exitButton.style.display = 'none';
     }
 
     /**
-     * Sets the callback for when the continue button is clicked.
+     * Sets the callback for when the exit button is clicked.
      */
-    public setOnContinue(callback: () => void): void {
-        this.onContinueCallback = callback;
+    public setOnExit(callback: () => void): void {
+        this.onExitCallback = callback;
     }
 
     /**

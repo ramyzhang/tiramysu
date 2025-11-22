@@ -7,18 +7,19 @@ import { DialogueScript } from './dialogue-script.js';
 export const sampleDialogues: DialogueScript[] = [
     {
         id: 'welcome',
-        name: 'Ramy',
+        name: 'ramy',
         messages: [
             {
-                text: 'Welcome to Tiramysu Land! 🍰',
+                text: 'omg!!! you finally made it!',
                 emotion: 'happy'
             },
             {
-                text: 'I\'m your friendly dessert guide. Click around to explore!',
+                text: 'this is ti-ramy-su land!',
                 emotion: 'excited'
             },
             {
-                text: 'Have fun and enjoy your stay! ✨'
+                text: 'have a look around owo',
+                emotion: 'excited'
             }
         ]
     },

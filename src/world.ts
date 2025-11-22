@@ -7,6 +7,7 @@ import { DebugUI } from './systems/debug-ui.js';
 import { PlayerMovementSystem } from './systems/player-movement.js';
 import { InteractionSystem } from './systems/interaction.js';
 import { DialogueSystem } from './systems/dialogue.js';
+import { CameraOcclusionSystem } from './systems/camera-occlusion.js';
 
 export class World {   
     private engine: Engine;
@@ -20,6 +21,7 @@ export class World {
     private playerMovementSystem!: PlayerMovementSystem;
     public interactionSystem!: InteractionSystem;
     public dialogueSystem!: DialogueSystem;
+    private cameraOcclusionSystem!: CameraOcclusionSystem;
 
     constructor(_engine: Engine) {
         this.engine = _engine;
@@ -41,7 +43,9 @@ export class World {
         this.tiramysu = new Tiramysu(this.engine);
         this.entityRegistry.add(this.tiramysu);
 
-        this.entityRegistry.add(new Interactable(new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), new THREE.MeshBasicMaterial({ color: Colours.forestGreen })), new THREE.Vector3(5, 5, -10), 'Interactable'));
+        this.entityRegistry.add(new Interactable(new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshBasicMaterial({ color: Colours.forestGreen })), new THREE.Vector3(5, 5, -10), 'Interactable'));
+            
+        this.entityRegistry.add(new Interactable(new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshBasicMaterial({ color: Colours.rose })), new THREE.Vector3(-5, 5, -10), 'Berry'));
 
         // -------------- initialize camera system --------------
         this.cameraSystem = new CameraSystem(this.engine);
@@ -58,6 +62,10 @@ export class World {
 
         // -------------- initialize dialogue system --------------
         this.dialogueSystem = new DialogueSystem(this.engine);
+
+        // -------------- initialize camera occlusion system --------------
+        this.cameraOcclusionSystem = new CameraOcclusionSystem(this.engine);
+        this.cameraOcclusionSystem.init();
     }
 
     update(delta: number): void {
@@ -75,5 +83,8 @@ export class World {
 
         // Update dialogue system
         this.dialogueSystem.update(delta);
+
+        // Update camera occlusion system (after camera update to use latest positions)
+        this.cameraOcclusionSystem.update(delta);
     }
 }

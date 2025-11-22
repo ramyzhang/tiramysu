@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Interactable } from '../entities/interactable.js';
-import { Layers, Colours } from '../constants.js';
+import { Layers } from '../constants.js';
 import { EventEmitter } from '../utils/event-emitter.js';
+import { Entity, EntityType } from '../entities/entity.js';
 
 /**
  * Interaction event types.
@@ -13,6 +13,14 @@ export interface InteractionEvents {
      * Emitted when an interactable is clicked.
      */
     'interactableClicked': {
+        interactable: Interactable;
+    };
+
+    'interactableEntered': {
+        interactable: Interactable;
+    };
+
+    'interactableExited': {
         interactable: Interactable;
     };
 }
@@ -43,9 +51,15 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
             if (data.isColliding) {
                 // Entering collision
                 this.collidingInteractables.add(data.interactable);
+                this.emit('interactableEntered', {
+                    interactable: data.interactable
+                });
             } else {
                 // Exiting collision
                 this.collidingInteractables.delete(data.interactable);
+                this.emit('interactableExited', {
+                    interactable: data.interactable
+                });
             }
         });
     }
@@ -80,16 +94,25 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
             this.raycaster.firstHitOnly = false;
             this.raycaster.setFromCamera(this.mouse, this.engine.camera);
 
-            const intersects = this.raycaster.intersectObjects(this.engine.scene.children, true);
+            const intersects = this.raycaster.intersectObjects(this.engine.entityRegistry.getEntities());
             
             for (const intersect of intersects) {
-                let foundInteractable = intersect.object as Interactable; 
-                if (foundInteractable) {
+                // check if the object or its parent is an interactable
+                const object = intersect.object as Entity;
+                const parent = intersect.object.parent as Entity;
+                if (parent.entityType === EntityType.Interactable) {
                     this.isInteracting = true;
-                    this.handleInteraction(foundInteractable);
+                    this.handleInteraction(intersect.object.parent as Interactable);
                     // Emit event for other systems (like dialogue)
                     this.emit('interactableClicked', {
-                        interactable: foundInteractable
+                        interactable: intersect.object.parent as Interactable
+                    });
+                }
+                else if (object.entityType === EntityType.Interactable) {
+                    this.isInteracting = true;
+                    this.handleInteraction(intersect.object as Interactable);
+                    this.emit('interactableClicked', {
+                        interactable: intersect.object as Interactable
                     });
                 }
             }
@@ -107,7 +130,6 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
      * Handles interaction with an interactable entity.
      */
     private handleInteraction(interactable: Interactable): void {
-        console.log(`Interacted with: ${interactable.name}`);
         (interactable as THREE.Object3D as THREE.Mesh).material = new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff });
         // TODO: Add interaction logic here (open UI, trigger dialogue, etc.)
     }

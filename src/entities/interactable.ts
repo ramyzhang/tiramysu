@@ -25,13 +25,8 @@ export class Interactable extends Entity {
             child.layers.set(Layers.Interactable);
         }
 
-        const sphereMaterial = new THREE.MeshBasicMaterial({ color: Colours.forestGreen, wireframe: true });
-        const sphereVisualizer = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 32), sphereMaterial);
-        sphereVisualizer.layers.set(Layers.Ignore);
-        this.add(sphereVisualizer);
-        
         // Set entity name
-        this.name = name || 'Interactable';
+        this.name = name ?? 'Interactable';
     }
 }
 

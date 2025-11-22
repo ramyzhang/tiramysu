@@ -14,12 +14,14 @@ export class DialogueSystem extends System {
     private currentDialogue: DialogueScript | null = null;
     private currentMessageIndex: number = 0;
     private isDialogueActive: boolean = false;
+    private autoAdvanceTimer: number | null = null;
+    private typingTimer: number | null = null;
 
     constructor(engine: Engine) {
         super(engine);
         this.dialogueBox = new DialogueBox();
         this.setupInteractionListener();
-        this.setupContinueHandler();
+        this.setupExitHandler();
     }
 
     /**
@@ -32,11 +34,11 @@ export class DialogueSystem extends System {
     }
 
     /**
-     * Sets up the continue button handler.
+     * Sets up the exit button handler.
      */
-    private setupContinueHandler(): void {
-        this.dialogueBox.setOnContinue(() => {
-            this.nextMessage();
+    private setupExitHandler(): void {
+        this.dialogueBox.setOnExit(() => {
+            this.closeDialogue();
         });
     }
 
@@ -45,6 +47,9 @@ export class DialogueSystem extends System {
      * Maps interactable names to dialogue IDs.
      */
     private startDialogue(interactable: Interactable): void {
+        // Clear any existing timers
+        this.clearTimers();
+        
         // Map interactable names to dialogue IDs
         // You can extend this to store dialogue ID on the interactable itself
         const dialogueMap: { [key: string]: string } = {
@@ -53,6 +58,7 @@ export class DialogueSystem extends System {
             'Berry': 'friendly-npc'
         };
 
+        console.log(`Starting dialogue for: ${interactable.name}`);
         const dialogueId = dialogueMap[interactable.name] || 'welcome';
         const dialogue = getDialogueById(dialogueId);
 
@@ -60,7 +66,13 @@ export class DialogueSystem extends System {
             this.currentDialogue = dialogue;
             this.currentMessageIndex = 0;
             this.isDialogueActive = true;
-            this.showCurrentMessage();
+            
+            // Show first message
+            const firstMessage = this.currentDialogue.messages[0];
+            this.dialogueBox.show(firstMessage, this.currentDialogue.name);
+            
+            // Auto-advance to next message after 1 second
+            this.scheduleNextMessage();
         }
     }
 
@@ -72,24 +84,52 @@ export class DialogueSystem extends System {
 
         const message = this.currentDialogue.messages[this.currentMessageIndex];
         if (message) {
-            this.dialogueBox.show(message, this.currentDialogue.name);
+            this.dialogueBox.addMessage(message);
         }
     }
 
     /**
-     * Advances to the next message or closes dialogue if finished.
+     * Schedules the next message to appear after showing typing indicator.
      */
-    private nextMessage(): void {
+    private scheduleNextMessage(): void {
         if (!this.currentDialogue) return;
 
-        this.currentMessageIndex++;
+        // Clear any existing timers
+        this.clearTimers();
 
-        if (this.currentMessageIndex >= this.currentDialogue.messages.length) {
-            // Dialogue finished
-            this.closeDialogue();
-        } else {
-            // Show next message
-            this.showCurrentMessage();
+        // Check if there are more messages
+        if (this.currentMessageIndex + 1 >= this.currentDialogue.messages.length) {
+            // No more messages - show exit button
+            this.dialogueBox.showExitButton();
+            return;
+        }
+
+        // Show typing indicator after 1 second
+        this.typingTimer = window.setTimeout(() => {
+            this.dialogueBox.showTypingIndicator();
+            
+            // Show next message after typing indicator (simulate typing delay)
+            this.autoAdvanceTimer = window.setTimeout(() => {
+                this.currentMessageIndex++;
+                this.showCurrentMessage();
+                
+                // Schedule next message
+                this.scheduleNextMessage();
+            }, 800); // Show message after 0.8s of typing indicator
+        }, 1000); // Wait 1 second before showing typing indicator
+    }
+
+    /**
+     * Clears all active timers.
+     */
+    private clearTimers(): void {
+        if (this.autoAdvanceTimer !== null) {
+            clearTimeout(this.autoAdvanceTimer);
+            this.autoAdvanceTimer = null;
+        }
+        if (this.typingTimer !== null) {
+            clearTimeout(this.typingTimer);
+            this.typingTimer = null;
         }
     }
 
@@ -97,35 +137,16 @@ export class DialogueSystem extends System {
      * Closes the current dialogue.
      */
     private closeDialogue(): void {
+        this.clearTimers();
         this.isDialogueActive = false;
         this.currentDialogue = null;
         this.currentMessageIndex = 0;
         this.dialogueBox.hide();
     }
 
-    private wasSpacePressed: boolean = false;
-    private wasEnterPressed: boolean = false;
-
     update(delta: number): void {
-        // Check for keyboard input to continue dialogue
-        if (this.isDialogueActive) {
-            const input = this.engine.input;
-            // Allow Space or Enter to continue dialogue
-            const spacePressed = input.isKeyPressed(' ');
-            const enterPressed = input.isKeyPressed('Enter');
-            
-            // Only trigger on new key press, not hold
-            if ((spacePressed && !this.wasSpacePressed) || (enterPressed && !this.wasEnterPressed)) {
-                this.nextMessage();
-            }
-            
-            this.wasSpacePressed = spacePressed;
-            this.wasEnterPressed = enterPressed;
-        } else {
-            // Reset key states when dialogue is not active
-            this.wasSpacePressed = false;
-            this.wasEnterPressed = false;
-        }
+        // No keyboard input needed - dialogue auto-advances
+        // Exit button handles closing the dialogue
     }
 
     /**
