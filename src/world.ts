@@ -87,4 +87,8 @@ export class World {
         // Update camera occlusion system (after camera update to use latest positions)
         this.cameraOcclusionSystem.update(delta);
     }
+
+    dispose(): void {
+        this.cameraOcclusionSystem.dispose();
+    }
 }

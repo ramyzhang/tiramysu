@@ -13,7 +13,6 @@ export class DialogueBox {
     private isVisible: boolean = false;
     private onExitCallback: (() => void) | null = null;
     private portraitCache: Map<string, string> = new Map();
-    private currentSpeakerName: string = '';
     private messageElements: HTMLDivElement[] = [];
 
     constructor() {
@@ -76,11 +75,13 @@ export class DialogueBox {
         // Create exit button (hidden by default, shown at end)
         this.exitButton = document.createElement('button');
         this.exitButton.textContent = 'Exit';
-        this.exitButton.style.width = '100%';
+        this.exitButton.style.width = '30%';
+        // center the button
+        this.exitButton.style.margin = '0 auto';
         this.exitButton.style.padding = '12px 24px';
         this.exitButton.style.background = 'linear-gradient(135deg, #FFFFFF 0%, #FFF0F5 100%)';
         this.exitButton.style.border = '2px solid #FFB6C1';
-        this.exitButton.style.borderRadius = '16px';
+        this.exitButton.style.borderRadius = '24px';
         this.exitButton.style.fontSize = '16px';
         this.exitButton.style.fontWeight = '600';
         this.exitButton.style.color = '#8B4513';
@@ -160,7 +161,7 @@ export class DialogueBox {
         const typingBubble = document.createElement('div');
         typingBubble.style.padding = '12px 16px';
         typingBubble.style.background = 'linear-gradient(135deg, rgba(255, 229, 180, 0.9) 0%, rgba(255, 182, 193, 0.9) 50%, rgba(255, 209, 220, 0.9) 100%)';
-        typingBubble.style.borderRadius = '18px';
+        typingBubble.style.borderRadius = '24px';
         typingBubble.style.boxShadow = '0 2px 8px rgba(255, 107, 181, 0.3)';
         typingBubble.style.width = 'fit-content';
         
@@ -187,12 +188,9 @@ export class DialogueBox {
     /**
      * Shows the dialogue box and initializes a new conversation.
      */
-    public show(message: DialogueMessage, speakerName: string): void {
+    public show(message: DialogueMessage): void {
         // Clear previous messages
         this.clearMessages();
-        
-        // Store speaker name for avatar
-        this.currentSpeakerName = message.speaker || speakerName;
         
         // Set portrait based on emotion
         const portraitUrl = this.getPortraitForEmotion(message.emotion || 'default');
@@ -256,7 +254,7 @@ export class DialogueBox {
         messageBubble.style.flex = '1';
         messageBubble.style.padding = '12px 16px';
         messageBubble.style.background = 'linear-gradient(135deg, rgba(255, 229, 180, 0.95) 0%, rgba(255, 182, 193, 0.95) 50%, rgba(255, 209, 220, 0.95) 100%)';
-        messageBubble.style.borderRadius = '18px';
+        messageBubble.style.borderRadius = '24px';
         messageBubble.style.boxShadow = '0 2px 8px rgba(255, 107, 181, 0.3)';
         messageBubble.style.fontSize = '15px';
         messageBubble.style.color = '#5A4A4A';

@@ -1,10 +1,10 @@
 import { DialogueScript } from './dialogue-script.js';
 
 /**
- * Sample dialogue scripts for the game.
+ * Dialogue scripts for the game.
  * Each interactable can reference one of these by ID.
  */
-export const sampleDialogues: DialogueScript[] = [
+export const gameDialogues: DialogueScript[] = [
     {
         id: 'welcome',
         name: 'ramy',
@@ -18,7 +18,7 @@ export const sampleDialogues: DialogueScript[] = [
                 emotion: 'excited'
             },
             {
-                text: 'have a look around owo',
+                text: 'let\'s have a look around... 👀',
                 emotion: 'excited'
             }
         ]
@@ -72,6 +72,6 @@ export const sampleDialogues: DialogueScript[] = [
  * Gets a dialogue script by ID.
  */
 export function getDialogueById(id: string): DialogueScript | undefined {
-    return sampleDialogues.find(d => d.id === id);
+    return gameDialogues.find(d => d.id === id);
 }
 

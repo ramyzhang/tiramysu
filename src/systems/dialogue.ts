@@ -1,8 +1,8 @@
 import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Interactable } from '../entities/interactable.js';
-import { DialogueScript, DialogueMessage } from '../dialogue/dialogue-script.js';
-import { getDialogueById } from '../dialogue/sample-dialogues.js';
+import { DialogueScript } from '../dialogue/dialogue-script.js';
+import { getDialogueById } from '../dialogue/game-dialogues.js';
 import { DialogueBox } from '../ui/dialogue-box.js';
 
 /**
@@ -69,7 +69,7 @@ export class DialogueSystem extends System {
             
             // Show first message
             const firstMessage = this.currentDialogue.messages[0];
-            this.dialogueBox.show(firstMessage, this.currentDialogue.name);
+            this.dialogueBox.show(firstMessage);
             
             // Auto-advance to next message after 1 second
             this.scheduleNextMessage();

@@ -139,14 +139,11 @@ export class CameraOcclusionSystem extends System {
         // Add a small offset to player position to avoid hitting the player mesh itself
         // Offset slightly towards the camera to ensure we detect meshes right in front of player
         const cameraToPlayer = new THREE.Vector3().subVectors(playerPos, cameraPos);
-        const distance = cameraToPlayer.length();
         const direction = cameraToPlayer.normalize();
         const offsetPlayerPos = playerPos.clone().sub(direction.multiplyScalar(this.raycastOffset));
 
-        // Cast ray from camera to player
         this.raycaster.set(cameraPos, offsetPlayerPos);
         
-        // Get all intersections with environment meshes
         const intersections = this.raycaster.intersectObjects(this.environmentMeshes, false);
         
         // Create a set of meshes that are blocking the view
