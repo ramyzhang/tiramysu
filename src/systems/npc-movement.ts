@@ -11,13 +11,28 @@ import { EntityType } from '../entities/entity.js';
  */
 export class NPCMovementSystem extends System {
     private player: Player | null = null;
-    private npcs: NPC[] = [];
+    private npcsInRange: Set<NPC> = new Set(); // Track NPCs currently in collision range
     private lookAtSpeed: number = 3.0; // Rotation speed multiplier
-    private tempSphere: THREE.Sphere = new THREE.Sphere();
     private tempVecA: THREE.Vector3 = new THREE.Vector3();
+    private unsubscribeCollision: (() => void) | null = null;
 
     constructor(engine: Engine) {
         super(engine);
+        
+        // Subscribe to physics collision events
+        this.unsubscribeCollision = this.engine.physics.on('interactableCollision', (data) => {
+            // Only handle NPC collisions
+            if (data.entity.entityType === EntityType.NPC && data.entity instanceof NPC) {
+                const npc = data.entity;
+                if (data.isColliding) {
+                    // Player entered NPC's collision sphere
+                    this.npcsInRange.add(npc);
+                } else {
+                    // Player exited NPC's collision sphere
+                    this.npcsInRange.delete(npc);
+                }
+            }
+        });
     }
 
     /**
@@ -45,35 +60,6 @@ export class NPCMovementSystem extends System {
         }
 
         return null;
-    }
-
-    /**
-     * Find all NPCs in the entity registry.
-     */
-    private findNPCs(): NPC[] {
-        const entities = this.engine.entityRegistry.getEntities();
-        const foundNPCs: NPC[] = [];
-
-        for (const entity of entities) {
-            if (entity.entityType === EntityType.NPC && entity instanceof NPC) {
-                foundNPCs.push(entity);
-            }
-        }
-
-        return foundNPCs;
-    }
-
-    /**
-     * Checks if the player is within an NPC's collision sphere.
-     */
-    private isPlayerInNPCRange(npc: NPC, player: Player): boolean {
-        // Get the NPC's sphere in world space
-        this.tempSphere.copy(npc.sphere);
-        this.tempSphere.applyMatrix4(npc.matrixWorld);
-
-        // Check if player position is within the sphere
-        const distance = this.tempSphere.center.distanceTo(player.position);
-        return distance <= this.tempSphere.radius;
     }
 
     /**
@@ -109,23 +95,27 @@ export class NPCMovementSystem extends System {
 
         // Apply rotation (only Y-axis)
         npc.rotation.y = newYRotation;
+        npc.updateMatrixWorld();
     }
 
     update(delta: number): void {
         const player = this.findPlayer();
         if (!player) return;
 
-        // Find all NPCs
-        this.npcs = this.findNPCs();
-        if (this.npcs.length === 0) return;
+        // Update lookAt for all NPCs currently in range
+        for (const npc of this.npcsInRange) {
+            // Make NPC look at player
+            this.lookAtSmooth(npc, player.position, delta);
+        }
+    }
 
-        // Update each NPC
-        for (const npc of this.npcs) {
-            // Check if player is within NPC's collision sphere
-            if (this.isPlayerInNPCRange(npc, player)) {
-                // Make NPC look at player
-                this.lookAtSmooth(npc, player.position, delta);
-            }
+    /**
+     * Clean up event listeners when the system is disposed.
+     */
+    dispose(): void {
+        if (this.unsubscribeCollision) {
+            this.unsubscribeCollision();
+            this.unsubscribeCollision = null;
         }
     }
 }

@@ -58,7 +58,6 @@ export class DialogueSystem extends System {
             'Berry': 'friendly-npc'
         };
 
-        console.log(`Starting dialogue for: ${interactable.name}`);
         const dialogueId = dialogueMap[interactable.name] || 'welcome';
         const dialogue = getDialogueById(dialogueId);
 

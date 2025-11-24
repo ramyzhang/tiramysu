@@ -111,30 +111,30 @@ export class Physics extends EventEmitter<PhysicsEvents> {
         for (const e of this.engine.entityRegistry.getEntities()) {
             if (e.entityType === EntityType.Interactable || e.entityType === EntityType.NPC) {
                 const entity = e as Interactable | NPC;
-                this.tempSphere.copy(entity.sphere);
-                this.tempSphere.applyMatrix4(entity.matrixWorld);
-                
-                const isColliding = this.tempAABB.intersectsSphere(this.tempSphere);
-                const wasColliding = this.collidingEntities.has(entity);
-                
-                if (isColliding && !wasColliding) {
-                    // Entering collision
-                    console.log("Entering collision with", entity.name);
-                    this.collidingEntities.add(entity);
-                    this.emit('interactableCollision', {
-                        entity,
-                        player: this.player!,
-                        isColliding: true
-                    });
-                } else if (!isColliding && wasColliding) {
-                    // Exiting collision
-                    console.log("Exiting collision with", entity.name);
-                    this.collidingEntities.delete(entity);
-                    this.emit('interactableCollision', {
-                        entity,
-                        player: this.player!,
-                        isColliding: false
-                    });
+                if (entity.sphere) {
+                    this.tempSphere.copy(entity.sphere);
+                    this.tempSphere.applyMatrix4(entity.matrixWorld);
+                    
+                    const isColliding = this.tempAABB.intersectsSphere(this.tempSphere);
+                    const wasColliding = this.collidingEntities.has(entity);
+                    
+                    if (isColliding && !wasColliding) {
+                        // Entering collision
+                        this.collidingEntities.add(entity);
+                        this.emit('interactableCollision', {
+                            entity,
+                            player: this.player!,
+                            isColliding: true
+                        });
+                    } else if (!isColliding && wasColliding) {
+                        // Exiting collision
+                        this.collidingEntities.delete(entity);
+                        this.emit('interactableCollision', {
+                            entity,
+                            player: this.player!,
+                            isColliding: false
+                        });
+                    }
                 }
             }
         }

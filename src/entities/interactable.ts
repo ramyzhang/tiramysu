@@ -7,17 +7,19 @@ import { Colours, Layers } from '../constants.js';
  * Has a Box3 collider and is set to the Interactable layer.
  */
 export class Interactable extends Entity {
-    sphere: THREE.Sphere = new THREE.Sphere();
+    sphere: THREE.Sphere | null = null;
 
-    constructor(mesh: THREE.Mesh, position: THREE.Vector3, name?: string, entityType: EntityType = EntityType.Interactable) {
+    constructor(mesh: THREE.Mesh, position: THREE.Vector3, name?: string, entityType: EntityType = EntityType.Interactable, shouldCreateSphere: boolean = true) {
         super(mesh, entityType);
         this.static = true;
         this.position.copy(position);
         
-        // Get size of the mesh and create a sphere around it accordingly that's about 1.5x the size of the mesh.
-        mesh.geometry.computeBoundingSphere();
-        const size = mesh.geometry.boundingSphere!.radius * 3;
-        this.sphere.radius = size;
+        if (shouldCreateSphere) {
+            // Get size of the mesh and create a sphere around it accordingly that's about 1.5x the size of the mesh.
+            mesh.geometry.computeBoundingSphere();
+            const size = mesh.geometry.boundingSphere!.radius * 3;
+            this.sphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), size);
+        }
 
         // Set this entity and all children to Interactable layer
         this.layers.set(Layers.Interactable);

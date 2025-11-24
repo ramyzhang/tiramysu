@@ -74,7 +74,8 @@ export class ResourceManager {
         const essentialAssets = [
             '/models/tiramysu-land-base.glb',
             '/models/tiramysu-land-navmesh.glb',
-            '/models/tiramysu-ramy.glb'
+            '/models/tiramysu-ramy.glb',
+            '/models/tiramysu-dialogue-bubble.glb'
         ];
 
         const loadPromises = essentialAssets.map(asset => this.loadModel(asset));
@@ -138,7 +139,6 @@ export class ResourceManager {
         entity: THREE.Object3D,
         modelPath: string,
         layer?: number,
-        placeholderMesh?: THREE.Mesh,
         animationDuration: number = 0.5
     ): Promise<void> {
         try {

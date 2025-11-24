@@ -46,33 +46,6 @@ export class PlayerMovementSystem extends System {
         return null;
     }
 
-    /**
-     * Lerps between two angles, taking the shortest path and handling 0/360 degree wrapping.
-     * @param current Current angle in radians
-     * @param target Target angle in radians
-     * @param t Interpolation factor (0-1)
-     * @returns Interpolated angle in radians, normalized to [0, 2π]
-     */
-    private lerpAngle(current: number, target: number, t: number): number {
-        // Normalize both angles to [0, 2π]
-        current = ((current % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
-        target = ((target % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
-
-        // Calculate the shortest angular difference
-        let delta = target - current;
-        
-        // Normalize delta to [-π, π] to always take the shortest path
-        if (delta > Math.PI) {
-            delta -= 2 * Math.PI;
-        } else if (delta < -Math.PI) {
-            delta += 2 * Math.PI;
-        }
-
-        // Lerp and normalize result
-        const result = current + delta * t;
-        return ((result % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
-    }
-
     update(delta: number): void {
         const player = this.findPlayer();
         if (!player) return;

@@ -53,42 +53,27 @@ export class World {
         // -------------- initialize systems --------------
         this.cameraSystem = new CameraSystem(this.engine);
         this.cameraSystem.setPlayer(this.player);
-
+        
         this.debugUI = new DebugUI(this.engine);
-
         this.playerMovementSystem = new PlayerMovementSystem(this.engine);
-
         this.interactionSystem = new InteractionSystem(this.engine);
-
         this.dialogueSystem = new DialogueSystem(this.engine);
+        this.npcMovementSystem = new NPCMovementSystem(this.engine);
 
         this.cameraOcclusionSystem = new CameraOcclusionSystem(this.engine);
         this.cameraOcclusionSystem.init();
-
-        this.npcMovementSystem = new NPCMovementSystem(this.engine);
     }
 
     update(delta: number): void {
         // Update interaction system first (to set interaction state)
         this.interactionSystem.update(delta);
 
-        // Update player movement system (will check for interactions)
-        this.playerMovementSystem.update(delta);
-
-        // Update camera system
-        this.cameraSystem.update(delta);
-
-        // Update debug UI
-        this.debugUI.update(delta);
-
-        // Update dialogue system
-        this.dialogueSystem.update(delta);
-
-        // Update camera occlusion system (after camera update to use latest positions)
-        this.cameraOcclusionSystem.update(delta);
-
-        // Update NPC movement system
         this.npcMovementSystem.update(delta);
+        this.playerMovementSystem.update(delta);
+        this.cameraSystem.update(delta);
+        this.debugUI.update(delta);
+        this.dialogueSystem.update(delta);
+        this.cameraOcclusionSystem.update(delta);
     }
 
     dispose(): void {

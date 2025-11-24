@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Player } from '../entities/player.js';
-import { EntityType, Entity } from '../entities/entity.js';
+import { EntityType } from '../entities/entity.js';
 import { Layers } from '../constants.js';
 
 /**
