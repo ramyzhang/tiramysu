@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Engine } from './engine/engine.js';
-import { Colours } from './constants.js';
-import { EntityRegistry, Player, Tiramysu, Interactable } from './entities/index.js';
+import { Colours, Layers } from './constants.js';
+import { EntityRegistry, Player, Tiramysu, NPC, Interactable } from './entities/index.js';
 import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
 import { PlayerMovementSystem } from './systems/player-movement.js';
@@ -16,6 +16,7 @@ export class World {
     
     private player!: Player;
     private tiramysu!: Tiramysu;
+
     private cameraSystem!: CameraSystem;
     private debugUI!: DebugUI;
     private playerMovementSystem!: PlayerMovementSystem;
@@ -43,27 +44,25 @@ export class World {
         this.tiramysu = new Tiramysu(this.engine);
         this.entityRegistry.add(this.tiramysu);
 
-        this.entityRegistry.add(new Interactable(new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshBasicMaterial({ color: Colours.forestGreen })), new THREE.Vector3(5, 5, -10), 'Interactable'));
-            
-        this.entityRegistry.add(new Interactable(new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshBasicMaterial({ color: Colours.rose })), new THREE.Vector3(-5, 5, -10), 'Berry'));
-
-        // -------------- initialize camera system --------------
+        // Add NPC with lazy loading - load mesh in background (don't block initialization)
+        const liltao = new NPC(this.engine, '/models/tiramysu-liltao.glb', new THREE.Vector3(0, 5, -10), 'LilTao');
+        this.entityRegistry.add(liltao);
+        this.engine.resources.loadMeshIntoEntity(liltao, '/models/tiramysu-liltao.glb', Layers.NPC).catch((error) => {
+            console.error('Failed to load Liltao mesh:', error);
+        });
+ 
+        // -------------- initialize systems --------------
         this.cameraSystem = new CameraSystem(this.engine);
         this.cameraSystem.setPlayer(this.player);
 
-        // -------------- initialize debug UI --------------
         this.debugUI = new DebugUI(this.engine);
 
-        // -------------- initialize player movement system --------------
         this.playerMovementSystem = new PlayerMovementSystem(this.engine);
 
-        // -------------- initialize interaction system --------------
         this.interactionSystem = new InteractionSystem(this.engine);
 
-        // -------------- initialize dialogue system --------------
         this.dialogueSystem = new DialogueSystem(this.engine);
 
-        // -------------- initialize camera occlusion system --------------
         this.cameraOcclusionSystem = new CameraOcclusionSystem(this.engine);
         this.cameraOcclusionSystem.init();
     }

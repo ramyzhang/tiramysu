@@ -2,9 +2,8 @@ import * as THREE from 'three';
 
 import { Engine } from './engine.js';
 import { Entity, EntityType } from '../entities/entity.js';
-import { Player } from '../entities/player.js';
 import { Layers } from '../constants.js';
-import { Interactable } from '../entities/interactable.js';
+import { Player, Interactable, NPC } from '../entities/index.js';
 import { EventEmitter } from '../utils/event-emitter.js';
 
 /**
@@ -15,7 +14,7 @@ export interface PhysicsEvents {
      * Emitted when the player collides with an interactable entity.
      */
     'interactableCollision': {
-        interactable: Interactable;
+        entity: Interactable | NPC;
         player: Entity;
         isColliding: boolean; // true when entering collision, false when exiting
     };
@@ -36,7 +35,7 @@ export class Physics extends EventEmitter<PhysicsEvents> {
 
     private raycaster: THREE.Raycaster;
 
-    private collidingInteractables: Set<Interactable> = new Set();
+    private collidingEntities: Set<Entity> = new Set();
 
     constructor(_engine: Engine) {
         super();
@@ -110,27 +109,29 @@ export class Physics extends EventEmitter<PhysicsEvents> {
 
         // Check for interactable collisions
         for (const e of this.engine.entityRegistry.getEntities()) {
-            if (e.entityType === EntityType.Interactable) {
-                const interactable = e as Interactable;
-                this.tempSphere.copy(interactable.sphere);
-                this.tempSphere.applyMatrix4(interactable.matrixWorld);
+            if (e.entityType === EntityType.Interactable || e.entityType === EntityType.NPC) {
+                const entity = e as Interactable | NPC;
+                this.tempSphere.copy(entity.sphere);
+                this.tempSphere.applyMatrix4(entity.matrixWorld);
                 
                 const isColliding = this.tempAABB.intersectsSphere(this.tempSphere);
-                const wasColliding = this.collidingInteractables.has(interactable);
+                const wasColliding = this.collidingEntities.has(entity);
                 
                 if (isColliding && !wasColliding) {
                     // Entering collision
-                    this.collidingInteractables.add(interactable);
+                    console.log("Entering collision with", entity.name);
+                    this.collidingEntities.add(entity);
                     this.emit('interactableCollision', {
-                        interactable,
+                        entity,
                         player: this.player!,
                         isColliding: true
                     });
                 } else if (!isColliding && wasColliding) {
                     // Exiting collision
-                    this.collidingInteractables.delete(interactable);
+                    console.log("Exiting collision with", entity.name);
+                    this.collidingEntities.delete(entity);
                     this.emit('interactableCollision', {
-                        interactable,
+                        entity,
                         player: this.player!,
                         isColliding: false
                     });

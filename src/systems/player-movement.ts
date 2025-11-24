@@ -7,16 +7,12 @@ import { PlayerSpawnPosition } from '../constants.js';
 
 export class PlayerMovementSystem extends System {
     private player: Player | null = null;
-    private maxRotationSpeed: number = 2.0; // Radians per second
     private moveSpeed: number = 5.0; // Units per second
-    private playerDirection: THREE.Vector3 = new THREE.Vector3();
     private cameraDirection: THREE.Vector3 = new THREE.Vector3();
 
     private inputDirection: THREE.Vector2 = new THREE.Vector2();
 
     private tempVecA: THREE.Vector3 = new THREE.Vector3();
-    private tempVecB: THREE.Vector3 = new THREE.Vector3();
-    private tempMat: THREE.Matrix4 = new THREE.Matrix4();
 
     constructor(engine: Engine) {
         super(engine);

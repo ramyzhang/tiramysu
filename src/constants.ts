@@ -16,5 +16,5 @@ export enum Layers {
     Player = 5,
 }
 
-export const PlayerSpawnPosition = new THREE.Vector3(0, 8.0, -10.0);
+export const PlayerSpawnPosition = new THREE.Vector3(0, 5.0, -10.0);
 export const PlayerSpawnDirection = new THREE.Vector3(0, 0, 1);

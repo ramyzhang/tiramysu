@@ -14,6 +14,7 @@ export class Entity extends THREE.Object3D {
 }
 
 export enum EntityType {
+    None,
     NPC,
     Player,
     Prop,

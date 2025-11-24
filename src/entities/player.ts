@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import { Entity, EntityType } from "./entity.js";
-import { Colours, Layers, PlayerSpawnPosition, PlayerSpawnDirection } from '../constants.js';
+import { Layers, PlayerSpawnPosition, PlayerSpawnDirection } from '../constants.js';
 import { Engine } from '../engine/engine.js';
 
 export class Capsule {

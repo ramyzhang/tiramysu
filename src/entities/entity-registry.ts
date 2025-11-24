@@ -19,6 +19,11 @@ export class EntityRegistry {
         const index = this.entities.indexOf(entity);
         if (index > -1) {
             this.entities.splice(index, 1);
+            // remove all children of the entity
+            entity.traverse((child) => {
+                this.scene.remove(child);
+            });
+            
             this.scene.remove(entity);
         }
     }

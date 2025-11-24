@@ -9,8 +9,8 @@ import { Colours, Layers } from '../constants.js';
 export class Interactable extends Entity {
     sphere: THREE.Sphere = new THREE.Sphere();
 
-    constructor(mesh: THREE.Mesh, position: THREE.Vector3, name?: string) {
-        super(mesh, EntityType.Interactable);
+    constructor(mesh: THREE.Mesh, position: THREE.Vector3, name?: string, entityType: EntityType = EntityType.Interactable) {
+        super(mesh, entityType);
         this.static = true;
         this.position.copy(position);
         

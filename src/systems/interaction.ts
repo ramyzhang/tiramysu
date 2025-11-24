@@ -50,15 +50,15 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
         this.engine.physics.on('interactableCollision', (data) => {
             if (data.isColliding) {
                 // Entering collision
-                this.collidingInteractables.add(data.interactable);
+                this.collidingInteractables.add(data.entity as Interactable);
                 this.emit('interactableEntered', {
-                    interactable: data.interactable
+                    interactable: data.entity as Interactable
                 });
             } else {
                 // Exiting collision
-                this.collidingInteractables.delete(data.interactable);
+                this.collidingInteractables.delete(data.entity as Interactable);
                 this.emit('interactableExited', {
-                    interactable: data.interactable
+                    interactable: data.entity as Interactable
                 });
             }
         });
@@ -90,7 +90,7 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
             this.wasPointerDown = input.pointerDown;
             this.mouse.copy(input.pointerPosition);
 
-            this.raycaster.layers.set(Layers.Interactable);
+            this.raycaster.layers.enable(Layers.Interactable | Layers.NPC);
             this.raycaster.firstHitOnly = false;
             this.raycaster.setFromCamera(this.mouse, this.engine.camera);
 
@@ -99,20 +99,18 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
             for (const intersect of intersects) {
                 // check if the object or its parent is an interactable
                 const object = intersect.object as Entity;
-                const parent = intersect.object.parent as Entity;
-                if (parent.entityType === EntityType.Interactable) {
+                const entityType = this.getEntityType(object);
+
+                console.log("Entity type", entityType);
+
+                if (entityType === EntityType.Interactable || entityType === EntityType.NPC) {
+                    console.log("Intersecting with", intersect.object.name);
+
                     this.isInteracting = true;
                     this.handleInteraction(intersect.object.parent as Interactable);
                     // Emit event for other systems (like dialogue)
                     this.emit('interactableClicked', {
                         interactable: intersect.object.parent as Interactable
-                    });
-                }
-                else if (object.entityType === EntityType.Interactable) {
-                    this.isInteracting = true;
-                    this.handleInteraction(intersect.object as Interactable);
-                    this.emit('interactableClicked', {
-                        interactable: intersect.object as Interactable
                     });
                 }
             }
@@ -132,6 +130,19 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
     private handleInteraction(interactable: Interactable): void {
         (interactable as THREE.Object3D as THREE.Mesh).material = new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff });
         // TODO: Add interaction logic here (open UI, trigger dialogue, etc.)
+    }
+
+    // recursive helper function to get the entity type of an object or its parent
+    private getEntityType(object: THREE.Object3D): EntityType {
+        if (object === null) {
+            return EntityType.None;
+        }
+
+        if (object instanceof Entity) {
+            return object.entityType;
+        }
+
+        return this.getEntityType(object.parent as THREE.Object3D);
     }
 }
 

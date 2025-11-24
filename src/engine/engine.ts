@@ -46,7 +46,7 @@ export class Engine {
         this.clock = new THREE.Clock();
 
         // Initialize systems
-        this.resources = new ResourceManager();
+        this.resources = new ResourceManager(this);
         this.input = new InputManager();
         this.entityRegistry = new EntityRegistry(this);
         this.world = new World(this);

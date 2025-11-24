@@ -24,8 +24,8 @@ export const gameDialogues: DialogueScript[] = [
         ]
     },
     {
-        id: 'mystery-box',
-        name: 'Mysterious Box',
+        id: 'lil-tao',
+        name: 'LilTao',
         messages: [
             {
                 text: '*The box shimmers with a soft pink glow*',

@@ -17,8 +17,8 @@ export class CameraSystem extends System {
     private cameraDirection: THREE.Vector3 = new THREE.Vector3();
 
     // Player camera settings
-    private readonly cameraHeight = 1.3;
-    private readonly cameraDistance = 7;
+    private readonly cameraHeight = 1.5;
+    private readonly cameraDistance = 5;
     private readonly cameraResetSpeed = 0.5;
     private readonly cameraFollowSpeed = 3;
     
