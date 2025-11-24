@@ -28,10 +28,6 @@ interface DialogueBubbleAnimation {
     npc: NPC;
 }
 
-/**
- * System that handles interactions with interactable entities.
- * Listens to physics collision events and handles click interactions.
- */
 export class InteractionSystem extends EventEmitter<InteractionEvents> {
     // Core system properties
     protected engine: Engine;
@@ -64,9 +60,6 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
         this.raycaster.firstHitOnly = false;
     }
 
-    /**
-     * Sets up listener for physics interactable collision events.
-     */
     private setupPhysicsListener(): void {
         this.engine.physics.on('interactableCollision', (data) => {
             if (data.isColliding) {
