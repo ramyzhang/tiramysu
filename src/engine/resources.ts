@@ -153,12 +153,9 @@ export class ResourceManager {
                 model = await this.loadModel(modelPath);
             }
 
-            // Find and remove placeholder mesh if not provided
-            // remove placeholder mesh
-            this.engine.scene.remove(entity);
-
             // Remove entity from entity registry and add it back after loading
             this.engine.entityRegistry.remove(entity as Entity);
+            this.engine.scene.remove(entity);
 
             // Reset model's transform to origin before adding
             // This ensures the model doesn't affect the entity's position
@@ -175,6 +172,13 @@ export class ResourceManager {
             }
 
             entity.attach(model);
+            // Find and remove placeholder mesh if not provided
+            // remove placeholder mesh
+            for (const child of entity.children) {
+                if (child.name === 'Placeholder') {
+                    entity.remove(child);
+                }
+            }
 
             // Add the entity back to the entity registry
             this.engine.entityRegistry.add(entity as Entity);

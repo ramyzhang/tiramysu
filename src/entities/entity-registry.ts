@@ -10,9 +10,11 @@ export class EntityRegistry {
         this.scene = _engine.scene;
     }
     
-    add(entity: Entity): void {
+    add(entity: Entity, addToScene: boolean = true): void {
         this.entities.push(entity);
-        this.scene.add(entity);
+        if (addToScene) {
+            this.scene.add(entity);
+        }
     }
 
     remove(entity: Entity): void {

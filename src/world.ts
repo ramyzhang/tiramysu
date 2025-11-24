@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Engine } from './engine/engine.js';
-import { Colours, Layers } from './constants.js';
+import { Colours, Layers, LilTaoDialogueBubbleOffset } from './constants.js';
 import { EntityRegistry, Player, Tiramysu, NPC, Interactable } from './entities/index.js';
 import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
@@ -37,23 +37,12 @@ export class World {
         this.scene.add(ambientLight);
         
         // -------------- initialize entities --------------
-        this.player = new Player(this.engine);
-        this.entityRegistry.add(this.player);
-        
-        this.tiramysu = new Tiramysu(this.engine);
-        this.entityRegistry.add(this.tiramysu);
-
-        // Add NPC with lazy loading - load mesh in background (don't block initialization)
-        const liltao = new NPC(this.engine, '/models/tiramysu-liltao.glb', LilTaoSpawnPosition, 'LilTao');
-        this.entityRegistry.add(liltao);
-        this.engine.resources.loadMeshIntoEntity(liltao, '/models/tiramysu-liltao.glb', Layers.NPC).catch((error) => {
-            console.error('Failed to load Liltao mesh:', error);
-        });
+        this.spawn();
  
         // -------------- initialize systems --------------
         this.cameraSystem = new CameraSystem(this.engine);
         this.cameraSystem.setPlayer(this.player);
-        
+
         this.debugUI = new DebugUI(this.engine);
         this.playerMovementSystem = new PlayerMovementSystem(this.engine);
         this.interactionSystem = new InteractionSystem(this.engine);
@@ -65,15 +54,32 @@ export class World {
     }
 
     update(delta: number): void {
-        // Update interaction system first (to set interaction state)
-        this.interactionSystem.update(delta);
+        if (!this.dialogueSystem.isActive()) {
+            this.interactionSystem.update(delta);
+            this.playerMovementSystem.update(delta);
+        }
 
         this.npcMovementSystem.update(delta);
-        this.playerMovementSystem.update(delta);
         this.cameraSystem.update(delta);
         this.debugUI.update(delta);
-        this.dialogueSystem.update(delta);
         this.cameraOcclusionSystem.update(delta);
+    }
+
+    spawn(): void {
+        this.player = new Player(this.engine);
+        this.entityRegistry.add(this.player);
+        
+        this.tiramysu = new Tiramysu(this.engine);
+        this.entityRegistry.add(this.tiramysu);
+
+        // Add NPC with lazy loading - load mesh in background (don't block initialization)
+        const liltao = new NPC(this.engine, LilTaoSpawnPosition, 'LilTao');
+        liltao.initDialogueBubble(LilTaoDialogueBubbleOffset);
+        this.entityRegistry.add(liltao);
+
+        this.engine.resources.loadMeshIntoEntity(liltao, '/models/tiramysu-liltao.glb', Layers.NPC).catch((error) => {
+            console.error('Failed to load Liltao mesh:', error);
+        });
     }
 
     dispose(): void {

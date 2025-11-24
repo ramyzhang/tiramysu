@@ -54,9 +54,7 @@ export class InputManager {
 
         window.addEventListener('pointermove', (e: PointerEvent) => {
             this.wasPointerDown = this.pointerDown;
-            if (this.pointerDown) {
-                this.updatePointerPosition(e);
-            }
+            this.updatePointerPosition(e);
         });
 
         // Context menu (right-click)

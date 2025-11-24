@@ -13,6 +13,7 @@ export class DebugUI extends System {
     private selectedEntity: Entity | null = null;
     private mouse: THREE.Vector2 = new THREE.Vector2();
     private raycaster: THREE.Raycaster = new THREE.Raycaster();
+    private currentIntersections: THREE.Intersection[] = [];
     private infoDiv: HTMLDivElement;
     private statsDiv: HTMLDivElement;
     private fpsHistory: number[] = [];
@@ -22,6 +23,7 @@ export class DebugUI extends System {
     private cameraInfoFrameCounter: number = 0;
     private cachedCameraPosition: THREE.Vector3 = new THREE.Vector3();
     private cachedCameraDirection: THREE.Vector3 = new THREE.Vector3();
+    private debugSphere: THREE.Mesh | null = null;
 
     constructor(engine: Engine) {
         super(engine);
@@ -69,6 +71,14 @@ export class DebugUI extends System {
         this.engine.input.setContextMenuCallback((e: PointerEvent) => {
             this.handleRightClick(e);
         });
+
+        // Setup raycaster layers
+        this.raycaster.layers.enable(Layers.Player);
+        this.raycaster.layers.enable(Layers.Environment);
+        this.raycaster.layers.enable(Layers.Interactable);
+        this.raycaster.layers.enable(Layers.NPC);
+
+        this.createDebugSphere();
     }
 
     update(delta: number): void {
@@ -82,6 +92,12 @@ export class DebugUI extends System {
             this.engine.camera.getWorldDirection(this.cachedCameraDirection);
             this.cameraInfoFrameCounter = 0;
         }
+
+        // Perform raycast every frame
+        this.performRaycast();
+
+        // Update debug sphere using shared intersection results
+        this.updateDebugSphere();
 
         if (this.selectedEntity) {
             // Update velocity cache every 20 frames
@@ -100,31 +116,25 @@ export class DebugUI extends System {
     }
 
     /**
-     * Handles right-click event: raycasts and, if an Entity is hit, shows its data in the floating div.
+     * Performs raycast every frame and stores the results.
+     */
+    private performRaycast(): void {
+        const input = this.engine.input;
+        this.mouse.copy(input.pointerPosition);
+        this.raycaster.setFromCamera(this.mouse, this.engine.camera);
+        this.currentIntersections = this.raycaster.intersectObjects(this.engine.entityRegistry.getEntities(), true);
+    }
+
+    /**
+     * Handles right-click event: uses the current intersection results to find and select an Entity.
      */
     private handleRightClick(event: PointerEvent) {
-        // Calculate mouse coordinates in normalized device coordinates (-1 to +1)
-        this.mouse = updatePointerPosition(event);
-
-        this.raycaster.layers.enable(Layers.Player);
-        this.raycaster.layers.enable(Layers.Environment);
-        this.raycaster.layers.enable(Layers.Interactable);
-        this.raycaster.layers.enable(Layers.NPC);
-        this.raycaster.setFromCamera(this.mouse, this.engine.camera);
-
-        // Gather all registered entities' Object3D
-        const objects: THREE.Object3D[] = this.engine.entityRegistry
-            .getEntities()
-            .map(entity => entity as THREE.Object3D);
-
-        // Raycast
-        const intersects = this.raycaster.intersectObjects(objects, true);
-
+        // Use the most recent intersection results from the update loop
         let foundEntity: Entity | null = null;
-        if (intersects.length > 0) {
+        if (this.currentIntersections.length > 0) {
             // Traverse up the hierarchy to find an Entity
-            for (let i = 0; i < intersects.length; i++) {
-                let obj: THREE.Object3D | null = intersects[i].object;
+            for (let i = 0; i < this.currentIntersections.length; i++) {
+                let obj: THREE.Object3D | null = this.currentIntersections[i].object;
                 while (obj) {
                     if (obj instanceof Entity) {
                         foundEntity = obj as Entity;
@@ -212,10 +222,46 @@ export class DebugUI extends System {
         `;
     }
 
+    /**
+     * Creates a debug sphere mesh for visualizing interaction raycast hits.
+     */
+    private createDebugSphere(): void {
+        const geometry = new THREE.SphereGeometry(0.1, 16, 16);
+        const material = new THREE.MeshBasicMaterial({ 
+            color: 0xff0000,
+            wireframe: false,
+            transparent: true,
+            opacity: 0.8
+        });
+        this.debugSphere = new THREE.Mesh(geometry, material);
+        this.debugSphere.visible = false;
+        this.debugSphere.name = 'InteractionRaycastDebugSphere';
+        this.engine.scene.add(this.debugSphere);
+    }
+
+    /**
+     * Updates the debug sphere position based on the current intersection results.
+     */
+    private updateDebugSphere(): void {
+        if (!this.debugSphere) return;
+
+        if (this.currentIntersections.length > 0) {
+            this.debugSphere.position.copy(this.currentIntersections[0].point);
+            this.debugSphere.visible = true;
+        } else {
+            this.debugSphere.visible = false;
+        }
+    }
+
     dispose(): void {
         this.selectedEntity = null;
         // Clear context menu callback
         this.engine.input.clearContextMenuCallback();
+        // Remove debug sphere
+        if (this.debugSphere) {
+            this.engine.scene.remove(this.debugSphere);
+            this.debugSphere = null;
+        }
         if (this.infoDiv && this.infoDiv.parentElement) {
             this.infoDiv.parentElement.removeChild(this.infoDiv);
         }
