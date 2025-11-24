@@ -44,27 +44,6 @@ export const gameDialogues: DialogueScript[] = [
                 text: 'It looks delicious! Maybe you should save it for later.'
             }
         ]
-    },
-    {
-        id: 'friendly-npc',
-        name: 'Berry',
-        messages: [
-            {
-                text: 'Oh, hello there! 👋',
-                emotion: 'friendly'
-            },
-            {
-                text: 'I\'m Berry! I love exploring this dessert world.',
-                emotion: 'happy'
-            },
-            {
-                text: 'Have you tried the tiramisu yet? It\'s absolutely divine!',
-                emotion: 'excited'
-            },
-            {
-                text: 'Well, I should get going. See you around! 🌸'
-            }
-        ]
     }
 ];
 

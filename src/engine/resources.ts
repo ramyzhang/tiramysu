@@ -172,13 +172,6 @@ export class ResourceManager {
             }
 
             entity.attach(model);
-            // Find and remove placeholder mesh if not provided
-            // remove placeholder mesh
-            for (const child of entity.children) {
-                if (child.name === 'Placeholder') {
-                    entity.remove(child);
-                }
-            }
 
             // Add the entity back to the entity registry
             this.engine.entityRegistry.add(entity as Entity);

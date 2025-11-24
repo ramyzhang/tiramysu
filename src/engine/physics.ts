@@ -119,7 +119,6 @@ export class Physics extends EventEmitter<PhysicsEvents> {
                     const wasColliding = this.collidingEntities.has(entity);
                     
                     if (isColliding && !wasColliding) {
-                        // Entering collision
                         this.collidingEntities.add(entity);
                         this.emit('interactableCollision', {
                             entity,
@@ -127,7 +126,6 @@ export class Physics extends EventEmitter<PhysicsEvents> {
                             isColliding: true
                         });
                     } else if (!isColliding && wasColliding) {
-                        // Exiting collision
                         this.collidingEntities.delete(entity);
                         this.emit('interactableCollision', {
                             entity,

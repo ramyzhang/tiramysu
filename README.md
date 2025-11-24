@@ -2,11 +2,17 @@
 
 An experimental project with three.js and Typescript to create a little interactive dessert-themed world for my personal website.
 
+![Screenshot of Tiramysu Land](./readme-img.png)
+
 To-Dos:
-- Design diegetic UI popups for project descriptions & implement them
+- Implement diegetic UI popups for content
+- Scene management (theatre vs. world)
+- GUI (links, pose mode, mute)
 - Loading screen
 - Message in a bottle system
-- Animation system
+- Animations
+- Fix texture sizing for environment
+- Add OnGround check and put jumping back in
 - Shaders for water
 - Synthesizers with Web Audio API for SFX and ambience
 
