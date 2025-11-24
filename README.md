@@ -2,7 +2,7 @@
 
 An experimental project with three.js and Typescript to create a little interactive dessert-themed world for my personal website.
 
-![Screenshot of Tiramysu Land](./readme-img.png)
+![Screenshot of Tiramysu Land](.public/images/readme-img.png)
 
 To-Dos:
 - Implement diegetic UI popups for content
