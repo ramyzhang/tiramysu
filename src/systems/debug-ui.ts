@@ -108,6 +108,8 @@ export class DebugUI extends System {
 
         this.raycaster.layers.enable(Layers.Player);
         this.raycaster.layers.enable(Layers.Environment);
+        this.raycaster.layers.enable(Layers.Interactable);
+        this.raycaster.layers.enable(Layers.NPC);
         this.raycaster.setFromCamera(this.mouse, this.engine.camera);
 
         // Gather all registered entities' Object3D

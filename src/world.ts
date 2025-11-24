@@ -4,10 +4,8 @@ import { Colours, Layers } from './constants.js';
 import { EntityRegistry, Player, Tiramysu, NPC, Interactable } from './entities/index.js';
 import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
-import { PlayerMovementSystem } from './systems/player-movement.js';
-import { InteractionSystem } from './systems/interaction.js';
-import { DialogueSystem } from './systems/dialogue.js';
-import { CameraOcclusionSystem } from './systems/camera-occlusion.js';
+import { PlayerMovementSystem, InteractionSystem, DialogueSystem, CameraOcclusionSystem, NPCMovementSystem } from './systems/index.js';
+import { LilTaoSpawnPosition } from './constants.js';
 
 export class World {   
     private engine: Engine;
@@ -23,6 +21,7 @@ export class World {
     public interactionSystem!: InteractionSystem;
     public dialogueSystem!: DialogueSystem;
     private cameraOcclusionSystem!: CameraOcclusionSystem;
+    private npcMovementSystem!: NPCMovementSystem;
 
     constructor(_engine: Engine) {
         this.engine = _engine;
@@ -45,7 +44,7 @@ export class World {
         this.entityRegistry.add(this.tiramysu);
 
         // Add NPC with lazy loading - load mesh in background (don't block initialization)
-        const liltao = new NPC(this.engine, '/models/tiramysu-liltao.glb', new THREE.Vector3(0, 5, -10), 'LilTao');
+        const liltao = new NPC(this.engine, '/models/tiramysu-liltao.glb', LilTaoSpawnPosition, 'LilTao');
         this.entityRegistry.add(liltao);
         this.engine.resources.loadMeshIntoEntity(liltao, '/models/tiramysu-liltao.glb', Layers.NPC).catch((error) => {
             console.error('Failed to load Liltao mesh:', error);
@@ -65,6 +64,8 @@ export class World {
 
         this.cameraOcclusionSystem = new CameraOcclusionSystem(this.engine);
         this.cameraOcclusionSystem.init();
+
+        this.npcMovementSystem = new NPCMovementSystem(this.engine);
     }
 
     update(delta: number): void {
@@ -85,6 +86,9 @@ export class World {
 
         // Update camera occlusion system (after camera update to use latest positions)
         this.cameraOcclusionSystem.update(delta);
+
+        // Update NPC movement system
+        this.npcMovementSystem.update(delta);
     }
 
     dispose(): void {

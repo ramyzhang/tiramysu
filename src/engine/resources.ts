@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Engine } from './engine.js';
 import { Entity } from '../entities/entity.js';
+import { Layers } from '../constants.js';
 
 export class ResourceManager {
     private loader: GLTFLoader;
@@ -164,8 +165,7 @@ export class ResourceManager {
             model.applyMatrix4(entity.matrixWorld);
             model.visible = true; // Make visible
             model.updateMatrixWorld();
-
-            entity.attach(model);
+            model.layers.set(layer ?? Layers.Interactable);
 
             // Apply layer to all children of the loaded model if specified
             if (layer !== undefined) {
@@ -173,6 +173,8 @@ export class ResourceManager {
                     child.layers.set(layer);
                 });
             }
+
+            entity.attach(model);
 
             // Add the entity back to the entity registry
             this.engine.entityRegistry.add(entity as Entity);

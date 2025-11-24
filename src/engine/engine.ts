@@ -10,7 +10,7 @@ import { Layers } from '../constants.js';
 export class Engine {
     private renderer: THREE.WebGLRenderer;
     private renderTarget: THREE.WebGLRenderTarget | null = null;
-    private pixelationScale: number = 0.5; // Lower = more pixelated (0.25 = very pixelated, 1.0 = no pixelation)
+    private pixelationScale: number = 0.9; // Lower = more pixelated (0.25 = very pixelated, 1.0 = no pixelation)
     private screenQuad: THREE.Mesh | null = null;
     private screenScene: THREE.Scene | null = null;
     private screenCamera: THREE.OrthographicCamera | null = null;

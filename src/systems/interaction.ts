@@ -90,18 +90,18 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
             this.wasPointerDown = input.pointerDown;
             this.mouse.copy(input.pointerPosition);
 
-            this.raycaster.layers.enable(Layers.Interactable | Layers.NPC);
+            this.raycaster.layers.disableAll();
+            this.raycaster.layers.enable(Layers.Interactable);
+            this.raycaster.layers.enable(Layers.NPC);
             this.raycaster.firstHitOnly = false;
             this.raycaster.setFromCamera(this.mouse, this.engine.camera);
 
             const intersects = this.raycaster.intersectObjects(this.engine.entityRegistry.getEntities());
-            
+
             for (const intersect of intersects) {
                 // check if the object or its parent is an interactable
                 const object = intersect.object as Entity;
                 const entityType = this.getEntityType(object);
-
-                console.log("Entity type", entityType);
 
                 if (entityType === EntityType.Interactable || entityType === EntityType.NPC) {
                     console.log("Intersecting with", intersect.object.name);

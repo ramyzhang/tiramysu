@@ -18,3 +18,5 @@ export enum Layers {
 
 export const PlayerSpawnPosition = new THREE.Vector3(0, 5.0, -10.0);
 export const PlayerSpawnDirection = new THREE.Vector3(0, 0, 1);
+
+export const LilTaoSpawnPosition = new THREE.Vector3(8, 4.35, -15)
