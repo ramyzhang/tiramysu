@@ -81,17 +81,10 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
         });
     }
 
-    /**
-     * Checks if the player is currently interacting (clicking on an interactable).
-     * This can be used by other systems to prioritize interaction over movement.
-     */
     public isCurrentlyInteracting(): boolean {
         return this.isInteracting;
     }
 
-    /**
-     * Gets the set of interactables the player is currently colliding with.
-     */
     public getCollidingInteractables(): Set<Interactable> {
         return this.collidingInteractables;
     }
@@ -99,25 +92,20 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
     update(delta: number): void {
         const input = this.engine.input;
 
-        // Update animations
         this.updateDialogueBubbleAnimation(delta);
         this.updateHoverAnimation(delta);
 
-        // Perform raycast
         this.mouse.copy(input.pointerPosition);
         this.raycaster.setFromCamera(this.mouse, this.engine.camera);
         const intersects = this.raycaster.intersectObjects(this.engine.entityRegistry.getEntities());
 
-        // Update hover state
         this.updateHoverState(intersects);
-
-        // Handle click interactions
-        this.handleClickInteraction(input, intersects);
+        this.handleClickInteraction(input);
     }
 
-    // ============================================================================
+    // =========================================================================
     // Collision Event Handlers
-    // ============================================================================
+    // =========================================================================
 
     private onEnterCollision(entity: Interactable): void {
         if (entity.entityType === EntityType.NPC) {
@@ -133,13 +121,10 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
         }
     }
 
-    // ============================================================================
+    // =========================================================================
     // Dialogue Bubble Animation
-    // ============================================================================
+    // =========================================================================
 
-    /**
-     * Starts a scale animation for a dialogue bubble.
-     */
     private startDialogueBubbleAnimation(npc: NPC, targetScale: number): void {
         const currentScale = npc.dialogueBubble ? npc.dialogueBubble.scale.x : 0;
         
@@ -157,9 +142,6 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
         }
     }
 
-    /**
-     * Updates the dialogue bubble scale animation.
-     */
     private updateDialogueBubbleAnimation(delta: number): void {
         if (!this.dialogueBubbleAnimation) return;
 
@@ -174,7 +156,6 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
             animation.npc.dialogueBubble.visible = currentScale > 0.01;
         }
 
-        // Clean up completed animation
         if (progress >= 1.0) {
             if (animation.npc.dialogueBubble) {
                 animation.npc.dialogueBubble.scale.set(
@@ -188,13 +169,10 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
         }
     }
 
-    // ============================================================================
+    // =========================================================================
     // Hover Animation
-    // ============================================================================
+    // =========================================================================
 
-    /**
-     * Updates which Interactable is currently being hovered.
-     */
     private updateHoverState(intersects: THREE.Intersection[]): void {
         const newHoveredInteractable = this.getInteractableFromIntersection(intersects);
 
@@ -213,9 +191,6 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
         }
     }
 
-    /**
-     * Updates hover rotation animation for the currently hovered Interactable.
-     */
     private updateHoverAnimation(delta: number): void {
         this.hoverAnimationTime += delta * this.hoverAnimationSpeed;
 
@@ -226,14 +201,11 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
         }
     }
 
-    // ============================================================================
+    // =========================================================================
     // Raycasting & Interaction
-    // ============================================================================
+    // =========================================================================
 
-    /**
-     * Handles click interactions with Interactables.
-     */
-    private handleClickInteraction(input: any, intersects: THREE.Intersection[]): void {
+    private handleClickInteraction(input: any): void {
         const isNewClick = input.pointerDown && !this.wasPointerDown;
         this.wasPointerDown = input.pointerDown;
 
@@ -247,9 +219,6 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
         }
     }
 
-    /**
-     * Gets the Interactable from the first raycast intersection, if any.
-     */
     private getInteractableFromIntersection(intersects: THREE.Intersection[]): Interactable | null {
         if (intersects.length === 0) return null;
 
@@ -264,9 +233,6 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
         return null;
     }
 
-    /**
-     * Recursively finds the entity type of an object or its parent.
-     */
     private getEntityType(object: THREE.Object3D | null): EntityType {
         if (object === null) {
             return EntityType.None;
