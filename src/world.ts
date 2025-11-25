@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Engine } from './engine/engine.js';
 import { Colours, Layers, LilTaoDialogueBubbleOffset } from './constants.js';
-import { EntityRegistry, Player, Tiramysu, NPC, Interactable } from './entities/index.js';
+import { EntityRegistry, Player, Tiramysu, NPC, Prop } from './entities/index.js';
 import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
 import { PlayerMovementSystem, InteractionSystem, DialogueSystem, CameraOcclusionSystem, NPCMovementSystem } from './systems/index.js';
@@ -71,6 +71,13 @@ export class World {
         
         this.tiramysu = new Tiramysu(this.engine);
         this.entityRegistry.add(this.tiramysu);
+
+        const steamyurt = new Prop(new THREE.Vector3(11, 5, -16), 'Steamer Yurt');
+        steamyurt.rotation.y = Math.PI / 2;
+        this.entityRegistry.add(steamyurt);
+        this.engine.resources.loadMeshIntoEntity(steamyurt, '/models/tiramysu-steamyurt.glb', Layers.Environment).catch((error) => {
+            console.error('Failed to load Steamer Yurt mesh:', error);
+        });
 
         // Add NPC with lazy loading - load mesh in background (don't block initialization)
         const liltao = new NPC(this.engine, LilTaoSpawnPosition, 'LilTao');

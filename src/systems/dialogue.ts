@@ -114,7 +114,7 @@ export class DialogueSystem extends System {
                 
                 // Schedule next message
                 this.scheduleNextMessage();
-            }, 800); // Show message after 0.8s of typing indicator
+            }, 500); // Show message after 0.8s of typing indicator
         }, 1000); // Wait 1 second before showing typing indicator
     }
 
