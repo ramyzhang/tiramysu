@@ -21,3 +21,6 @@ export const PlayerSpawnDirection = new THREE.Vector3(0, 0, 1);
 
 export const LilTaoSpawnPosition = new THREE.Vector3(11.5, 4.35, -15);
 export const LilTaoDialogueBubbleOffset = new THREE.Vector3(0.4, 0.9, 0);
+
+export const MeimeiSpawnPosition = new THREE.Vector3(4, 4.25, -21);
+export const MeimeiDialogueBubbleOffset = new THREE.Vector3(0.4, 1, 0);

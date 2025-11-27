@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { Engine } from './engine/engine.js';
-import { Colours, Layers, LilTaoDialogueBubbleOffset } from './constants.js';
+import { Colours, Layers } from './constants.js';
 import { EntityRegistry, Player, Tiramysu, NPC, Prop } from './entities/index.js';
 import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
 import { PlayerMovementSystem, InteractionSystem, DialogueSystem, CameraOcclusionSystem, NPCMovementSystem } from './systems/index.js';
-import { LilTaoSpawnPosition } from './constants.js';
+import { LilTaoSpawnPosition, MeimeiSpawnPosition, MeimeiDialogueBubbleOffset, LilTaoDialogueBubbleOffset } from './constants.js';
 
 export class World {   
     private engine: Engine;
@@ -72,20 +72,21 @@ export class World {
         this.tiramysu = new Tiramysu(this.engine);
         this.entityRegistry.add(this.tiramysu);
 
-        const steamyurt = new Prop(new THREE.Vector3(11, 5, -16), 'Steamer Yurt');
-        steamyurt.rotation.y = Math.PI / 2;
-        this.entityRegistry.add(steamyurt);
-        this.engine.resources.loadMeshIntoEntity(steamyurt, '/models/tiramysu-steamyurt.glb', Layers.Environment).catch((error) => {
-            console.error('Failed to load Steamer Yurt mesh:', error);
-        });
-
-        // Add NPC with lazy loading - load mesh in background (don't block initialization)
+        // Add NPCs with lazy loading
         const liltao = new NPC(this.engine, LilTaoSpawnPosition, 'LilTao');
         liltao.initDialogueBubble(LilTaoDialogueBubbleOffset);
         this.entityRegistry.add(liltao);
 
         this.engine.resources.loadMeshIntoEntity(liltao, '/models/tiramysu-liltao.glb', Layers.NPC).catch((error) => {
             console.error('Failed to load Liltao mesh:', error);
+        });
+
+        const meimei = new NPC(this.engine, MeimeiSpawnPosition, 'Meimei');
+        meimei.initDialogueBubble(MeimeiDialogueBubbleOffset);
+        this.entityRegistry.add(meimei);
+
+        this.engine.resources.loadMeshIntoEntity(meimei, '/models/tiramysu-meimei.glb', Layers.NPC).catch((error) => {
+            console.error('Failed to load Meimei mesh:', error);
         });
     }
 
