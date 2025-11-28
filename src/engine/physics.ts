@@ -150,9 +150,8 @@ export class Physics extends EventEmitter<PhysicsEvents> {
         // Only update ground state if we had a collision
         // raycast down from the player's position to check if we are on the ground
         this.raycaster.set(this.player!.position, this.player!.position.clone().add(new THREE.Vector3(0, -3, 0)));
-        const intersects = this.raycaster.intersectObjects([this.environment!]);
+        const intersects = this.raycaster.intersectObjects(this.environment!.children!);
         if (intersects.length > 0) {
-            console.log("intersects", intersects[0]);
             this.isOnGround = true;
         } else {
             this.isOnGround = false;

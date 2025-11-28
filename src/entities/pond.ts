@@ -50,7 +50,7 @@ export class Pond extends Entity {
               uTexture: { value: pondTexture },
               uFrequency: { value: 10.0 },
               uRippleRate: { value: 100.0 },
-              uAmplitude: { value: 0.5 },
+              uAmplitude: { value: 1.1 },
               uWaveAmplitude: { value: 0.5 },
               uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
               uGradientPower: { value: 1.5 },
@@ -112,9 +112,11 @@ export class Pond extends Entity {
                     // pattern = 1 (white) -> use white
                     vec3 finalColor = mix(gradientColor, vec3(1.0), pattern);
                     
-                    gl_FragColor = vec4(finalColor, 1.0);
+                    gl_FragColor = vec4(finalColor, 0.8);
                 }
-            `
+            `,
+            transparent: true,
+            side: THREE.DoubleSide
           });
     }
 }
