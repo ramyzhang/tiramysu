@@ -10,3 +10,5 @@ export { Interactable } from './interactable.js';
 export { NPC } from './npc.js';
 export { EntityRegistry } from './entity-registry.js';
 export { Prop } from './prop.js';
+export { Waterfall } from './waterfall.js';
+export { Pond } from './pond.js';

@@ -75,7 +75,9 @@ export class ResourceManager {
             '/models/tiramysu-land-base.glb',
             '/models/tiramysu-land-navmesh.glb',
             '/models/tiramysu-ramy.glb',
-            '/models/tiramysu-dialogue-bubble.glb'
+            '/models/tiramysu-dialogue-bubble.glb',
+            '/models/tiramysu-pond.glb',
+            '/models/tiramysu-waterfall.glb',
         ];
 
         const loadPromises = essentialAssets.map(asset => this.loadModel(asset));

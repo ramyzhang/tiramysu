@@ -37,7 +37,7 @@ export class Engine {
             1000 // far clipping plane
         );
         this.camera.layers.enableAll();
-        this.renderer = new THREE.WebGLRenderer({ canvas });
+        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
 
         // Setup pixelation rendering

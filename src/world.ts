@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { Engine } from './engine/engine.js';
 import { Colours, Layers } from './constants.js';
-import { EntityRegistry, Player, Tiramysu, NPC, Prop } from './entities/index.js';
+import { EntityRegistry, Player, Tiramysu, NPC, Waterfall, Pond } from './entities/index.js';
 import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
 import { PlayerMovementSystem, InteractionSystem, DialogueSystem, CameraOcclusionSystem, NPCMovementSystem } from './systems/index.js';
-import { LilTaoSpawnPosition, MeimeiSpawnPosition, MeimeiDialogueBubbleOffset, LilTaoDialogueBubbleOffset } from './constants.js';
+import { LilTaoSpawnPosition, MeimeiSpawnPosition, MeimeiDialogueBubbleOffset, LilTaoDialogueBubbleOffset, PurinSpawnPosition, PurinDialogueBubbleOffset } from './constants.js';
 
 export class World {   
     private engine: Engine;
@@ -14,6 +14,8 @@ export class World {
     
     private player!: Player;
     private tiramysu!: Tiramysu;
+    private waterfall!: Waterfall;
+    private pond!: Pond;
 
     private cameraSystem!: CameraSystem;
     private debugUI!: DebugUI;
@@ -54,6 +56,9 @@ export class World {
     }
 
     update(delta: number): void {
+        this.waterfall.update(delta);
+        this.pond.update(delta);
+
         if (!this.dialogueSystem.isActive()) {
             this.interactionSystem.update(delta);
             this.playerMovementSystem.update(delta);
@@ -72,6 +77,12 @@ export class World {
         this.tiramysu = new Tiramysu(this.engine);
         this.entityRegistry.add(this.tiramysu);
 
+        this.waterfall = new Waterfall(this.engine);
+        this.entityRegistry.add(this.waterfall);
+
+        this.pond = new Pond(this.engine);
+        this.entityRegistry.add(this.pond);
+
         // Add NPCs with lazy loading
         const liltao = new NPC(this.engine, LilTaoSpawnPosition, 'LilTao');
         liltao.initDialogueBubble(LilTaoDialogueBubbleOffset);
@@ -87,6 +98,14 @@ export class World {
 
         this.engine.resources.loadMeshIntoEntity(meimei, '/models/tiramysu-meimei.glb', Layers.NPC).catch((error) => {
             console.error('Failed to load Meimei mesh:', error);
+        });
+
+        const purin = new NPC(this.engine, PurinSpawnPosition, 'Purin');
+        purin.initDialogueBubble(PurinDialogueBubbleOffset);
+        this.entityRegistry.add(purin);
+
+        this.engine.resources.loadMeshIntoEntity(purin, '/models/tiramysu-purin.glb', Layers.NPC).catch((error) => {
+            console.error('Failed to load Purin mesh:', error);
         });
     }
 
