@@ -4,7 +4,7 @@ import { Colours, Layers } from './constants.js';
 import { EntityRegistry, Player, Tiramysu, NPC, Waterfall } from './entities/index.js';
 import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
-import { PlayerMovementSystem, InteractionSystem, DialogueSystem, CameraOcclusionSystem, NPCMovementSystem } from './systems/index.js';
+import { PlayerMovementSystem, InteractionSystem, DialogueSystem, CameraOcclusionSystem, NPCMovementSystem, ParticleSystem } from './systems/index.js';
 import { LilTaoSpawnPosition, MeimeiSpawnPosition, MeimeiDialogueBubbleOffset, LilTaoDialogueBubbleOffset, PurinSpawnPosition, PurinDialogueBubbleOffset } from './constants.js';
 
 export class World {   
@@ -23,6 +23,7 @@ export class World {
     public dialogueSystem!: DialogueSystem;
     private cameraOcclusionSystem!: CameraOcclusionSystem;
     private npcMovementSystem!: NPCMovementSystem;
+    private particleSystem!: ParticleSystem;
 
     constructor(_engine: Engine) {
         this.engine = _engine;
@@ -52,6 +53,8 @@ export class World {
 
         this.cameraOcclusionSystem = new CameraOcclusionSystem(this.engine);
         this.cameraOcclusionSystem.init();
+        
+        this.particleSystem = new ParticleSystem(this.engine);
     }
 
     update(delta: number): void {
@@ -66,6 +69,7 @@ export class World {
         this.cameraSystem.update(delta);
         this.debugUI.update(delta);
         this.cameraOcclusionSystem.update(delta);
+        this.particleSystem.update(delta);
     }
 
     spawn(): void {
@@ -106,5 +110,6 @@ export class World {
 
     dispose(): void {
         this.cameraOcclusionSystem.dispose();
+        this.particleSystem.dispose();
     }
 }

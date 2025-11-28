@@ -8,3 +8,4 @@ export { InteractionSystem } from './interaction.js';
 export { DialogueSystem } from './dialogue.js';
 export { CameraOcclusionSystem } from './camera-occlusion.js';
 export { NPCMovementSystem } from './npc-movement.js';
+export { ParticleSystem } from './particle-system.js';
