@@ -11,7 +11,7 @@ export enum CameraMode {
 
 export class CameraSystem extends System {
     private player: Player | null = null;
-    private currentMode: CameraMode = CameraMode.Player;
+    private currentMode: CameraMode = CameraMode.Free;
     private playerDirection: THREE.Vector3 = new THREE.Vector3();
     private cameraPosition: THREE.Vector3 = new THREE.Vector3();
     private cameraDirection: THREE.Vector3 = new THREE.Vector3();
@@ -25,7 +25,7 @@ export class CameraSystem extends System {
     // Free camera settings
     private freeCameraSpeed = 10.0;
     private freeCameraPanSpeed = 2.0; // Rotation speed for Q/E panning
-    private freeCameraPosition = new THREE.Vector3(0, 10, 10);
+    private freeCameraPosition = new THREE.Vector3(0, 8, 25);
     private freeCameraRotationY = 0;
     private lastCKeyState: boolean = false;
 

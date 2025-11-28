@@ -76,7 +76,6 @@ export class ResourceManager {
             '/models/tiramysu-land-navmesh.glb',
             '/models/tiramysu-ramy.glb',
             '/models/tiramysu-dialogue-bubble.glb',
-            '/models/tiramysu-pond.glb',
             '/models/tiramysu-waterfall.glb',
         ];
 
