@@ -308,7 +308,7 @@ export class Waterfall extends Entity {
             `,
             fragmentShader: `
                 void main() {
-                    gl_FragColor = vec4(1.0, 1.0, 1.0, 0.8);
+                    gl_FragColor = vec4(1.0, 1.0, 1.0, 0.5);
                 }
             `,
             transparent: true,

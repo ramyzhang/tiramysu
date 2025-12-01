@@ -5,6 +5,7 @@ import { Engine } from '../engine/engine.js';
 interface Particle {
     mesh: THREE.Mesh;
     velocity: THREE.Vector3;
+    angularVelocity: THREE.Vector3;
     lifetime: number;
     maxLifetime: number;
     active: boolean;
@@ -21,10 +22,10 @@ export class ParticleSystem extends System {
     private lineEnd: THREE.Vector3 = new THREE.Vector3(4.3, 5.0, 7.2);
     
     // Particle properties
-    private spawnRate: number = 80; // particles per second
+    private spawnRate: number = 30; // particles per second
     private spawnTimer: number = 0;
-    private particleSpeed: number = 5.0;
-    private particleLifetime: number = 0.4;
+    private particleSpeed: number = 2.0;
+    private particleLifetime: number = 1.0;
     private particleSize: number = 0.15;
     
     constructor(engine: Engine) {
@@ -44,8 +45,7 @@ export class ParticleSystem extends System {
             // Each particle needs its own material for independent opacity control
             const material = new THREE.MeshBasicMaterial({ 
                 color: 0xffffff,
-                transparent: true,
-                opacity: 0.6,
+                opacity: 1.0,
                 side: THREE.DoubleSide
             });
             
@@ -56,6 +56,7 @@ export class ParticleSystem extends System {
             this.pool.push({
                 mesh,
                 velocity: new THREE.Vector3(),
+                angularVelocity: new THREE.Vector3(),
                 lifetime: 0,
                 maxLifetime: this.particleLifetime,
                 active: false
@@ -130,6 +131,21 @@ export class ParticleSystem extends System {
         particle.velocity.y += (Math.random() - 0.5) * 0.5;
         particle.velocity.z += (Math.random() - 0.5) * 0.5;
         
+        // Set random initial rotation
+        particle.mesh.rotation.set(
+            Math.random() * Math.PI * 2,
+            Math.random() * Math.PI * 2,
+            Math.random() * Math.PI * 2
+        );
+        
+        // Set random angular velocity (rotation speed)
+        const maxAngularSpeed = 5.0; // radians per second
+        particle.angularVelocity.set(
+            (Math.random() - 0.5) * maxAngularSpeed * 2,
+            (Math.random() - 0.5) * maxAngularSpeed * 2,
+            (Math.random() - 0.5) * maxAngularSpeed * 2
+        );
+        
         this.activeParticles.push(particle);
     }
     
@@ -160,6 +176,11 @@ export class ParticleSystem extends System {
             particle.mesh.position.add(
                 particle.velocity.clone().multiplyScalar(delta)
             );
+            
+            // Update rotation
+            particle.mesh.rotation.x += particle.angularVelocity.x * delta;
+            particle.mesh.rotation.y += particle.angularVelocity.y * delta;
+            particle.mesh.rotation.z += particle.angularVelocity.z * delta;
             
             // Update lifetime
             particle.lifetime += delta;

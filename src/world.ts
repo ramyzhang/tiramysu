@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Engine } from './engine/engine.js';
 import { Colours, Layers } from './constants.js';
-import { EntityRegistry, Player, Tiramysu, NPC, Waterfall } from './entities/index.js';
+import { EntityRegistry, Player, Tiramysu, NPC, Waterfall, Prop } from './entities/index.js';
 import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
 import { PlayerMovementSystem, InteractionSystem, DialogueSystem, CameraOcclusionSystem, NPCMovementSystem, ParticleSystem } from './systems/index.js';
@@ -32,11 +32,24 @@ export class World {
     }
 
     init(): void {
-        this.scene.background = new THREE.Color(Colours.peach); // peach
+        this.scene.background = new THREE.TextureLoader().load( 'textures/spyros-skybox.png' );
+        this.scene.fog = new THREE.Fog(Colours.pink, 0, 80);
         
         // -------------- initialize lighting --------------
-        const ambientLight = new THREE.AmbientLight(0xffffff, 3.0);
-        this.scene.add(ambientLight);
+        // const ambientLight = new THREE.AmbientLight(0xffffff, 3.0);
+        // this.scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        directionalLight.position.set(10, 10, 10);
+        this.scene.add(directionalLight);
+
+        const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x000000, 3.0);
+        hemisphereLight.position.set(10, 10, 10);
+        this.scene.add(hemisphereLight);
+
+        const pointLight = new THREE.PointLight(0xffffff, 1.0);
+        pointLight.position.set(2, 10, 20);
+        this.scene.add(pointLight);
         
         // -------------- initialize entities --------------
         this.spawn();
@@ -82,11 +95,23 @@ export class World {
         this.waterfall = new Waterfall(this.engine);
         this.entityRegistry.add(this.waterfall);
 
-        // Add NPCs with lazy loading
+        // Props
+        const theatre = new Prop(new THREE.Vector3(0, 0, 0), 'Theatre');
+        this.entityRegistry.add(theatre);
+        this.engine.resources.loadMeshIntoEntity(theatre, '/models/tiramysu-theatre.glb', Layers.Ignore).catch((error) => {
+            console.error('Failed to load Theatre mesh:', error);
+        });
+
+        const tanghulu_sgs = new Prop(new THREE.Vector3(6.5, 5, -22), 'Tanghulu');
+        this.entityRegistry.add(tanghulu_sgs);
+        this.engine.resources.loadMeshIntoEntity(tanghulu_sgs, '/models/tanghulu-sgs.glb', Layers.Ignore).catch((error) => {
+            console.error('Failed to load Tanghulu SGS mesh:', error);
+        });
+
+        // NPCs
         const liltao = new NPC(this.engine, LilTaoSpawnPosition, 'LilTao');
         liltao.initDialogueBubble(LilTaoDialogueBubbleOffset);
         this.entityRegistry.add(liltao);
-
         this.engine.resources.loadMeshIntoEntity(liltao, '/models/tiramysu-liltao.glb', Layers.NPC).catch((error) => {
             console.error('Failed to load Liltao mesh:', error);
         });
@@ -94,7 +119,6 @@ export class World {
         const meimei = new NPC(this.engine, MeimeiSpawnPosition, 'Meimei');
         meimei.initDialogueBubble(MeimeiDialogueBubbleOffset);
         this.entityRegistry.add(meimei);
-
         this.engine.resources.loadMeshIntoEntity(meimei, '/models/tiramysu-meimei.glb', Layers.NPC).catch((error) => {
             console.error('Failed to load Meimei mesh:', error);
         });
@@ -102,7 +126,6 @@ export class World {
         const purin = new NPC(this.engine, PurinSpawnPosition, 'Purin');
         purin.initDialogueBubble(PurinDialogueBubbleOffset);
         this.entityRegistry.add(purin);
-
         this.engine.resources.loadMeshIntoEntity(purin, '/models/tiramysu-purin.glb', Layers.NPC).catch((error) => {
             console.error('Failed to load Purin mesh:', error);
         });
