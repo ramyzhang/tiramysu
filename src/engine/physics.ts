@@ -22,8 +22,8 @@ export interface PhysicsEvents {
 
 export class Physics extends EventEmitter<PhysicsEvents> {
     private engine: Engine;
-    private player: Entity | null = null;
-    private environment: THREE.Mesh | null = null;
+    private player: Entity;
+    private environment: THREE.Mesh;
     public isOnGround: boolean = false;
 
     private tempVecA: THREE.Vector3 = new THREE.Vector3();
@@ -40,43 +40,44 @@ export class Physics extends EventEmitter<PhysicsEvents> {
     constructor(_engine: Engine) {
         super();
         this.engine = _engine;
-        this.player = null;
-        this.environment = null;
+        // player and environment will be set in init()
+        this.player = null!;
+        this.environment = null!;
         this.raycaster = new THREE.Raycaster();
     }
 
-    public init(): void {
-        for (const e of this.engine.entityRegistry.getEntities()) {
-            if (e.entityType === EntityType.Player) {
-                this.player = e;
-            }
-            if (e.entityType === EntityType.Environment) {
-                this.environment = e.collider as THREE.Mesh;
-            }
+    init(player: Entity, environment: Entity): void {
+        this.player = player;
+        // Environment's collider is the actual mesh we need
+        this.environment = environment.collider as THREE.Mesh;
+        if (!this.environment) {
+            console.warn('Environment entity missing collider');
         }
-
         this.raycaster.layers.enableAll();
     }
 
     update(delta: number): void {
-        if (this.player && this.environment) {
-            if (!(this.environment as THREE.Mesh).geometry.boundsTree) {
-                console.warn("BVH not ready yet!");
-                return;
-            }
-
-            this.gravity(delta);
-    
-            this.checkCollisions();  // Modifies tempLine
-            this.resolveCollisions(delta);  // Uses tempLine
-    
-            this.player!.position.addScaledVector(this.player!.velocity, delta);
-            this.player!.updateMatrixWorld();
+        if (!this.environment.geometry.boundsTree) {
+            console.warn("BVH not ready yet!");
+            return;
         }
+
+        this.gravity(delta);
+
+        this.checkCollisions();  // Modifies tempLine
+        this.resolveCollisions(delta);  // Uses tempLine
+
+        if (this.player.velocity) {
+            this.player.position.addScaledVector(this.player.velocity, delta);
+        }
+        this.player.updateMatrixWorld();
     }
 
     gravity(delta: number): void {
-        this.player!.velocity.y -= 9.8 * delta * (this.player as Player).weight;
+        if (!this.player.velocity) {
+            this.player.velocity = new THREE.Vector3(0, 0, 0);
+        }
+        this.player.velocity.y -= 9.8 * delta * (this.player as Player).weight;
     }
 
     checkCollisions(): void {  // Return void, modify tempLine directly
@@ -108,6 +109,8 @@ export class Physics extends EventEmitter<PhysicsEvents> {
         });
 
         // Check for interactable collisions
+        // Note: We still iterate registry for interactables since they can be dynamically added
+        // (like dialogue bubbles). For a small game, this is fine.
         for (const e of this.engine.entityRegistry.getEntities()) {
             if (e.entityType === EntityType.Interactable || e.entityType === EntityType.NPC) {
                 const entity = e as Interactable | NPC;
@@ -122,14 +125,14 @@ export class Physics extends EventEmitter<PhysicsEvents> {
                         this.collidingEntities.add(entity);
                         this.emit('interactableCollision', {
                             entity,
-                            player: this.player!,
+                            player: this.player,
                             isColliding: true
                         });
                     } else if (!isColliding && wasColliding) {
                         this.collidingEntities.delete(entity);
                         this.emit('interactableCollision', {
                             entity,
-                            player: this.player!,
+                            player: this.player,
                             isColliding: false
                         });
                     }
@@ -140,17 +143,17 @@ export class Physics extends EventEmitter<PhysicsEvents> {
     
     resolveCollisions(delta: number): void {
         const newPosition = this.tempVecA;
-        newPosition.copy(this.tempLine.start).applyMatrix4(this.environment!.matrixWorld);
+        newPosition.copy(this.tempLine.start).applyMatrix4(this.environment.matrixWorld);
     
         const deltaVector = this.tempVecB;
-        deltaVector.subVectors(newPosition, this.player!.position);
+        deltaVector.subVectors(newPosition, this.player.position);
     
         const hadCollision = deltaVector.length() > 0.005;
 
         // Only update ground state if we had a collision
         // raycast down from the player's position to check if we are on the ground
-        this.raycaster.set(this.player!.position, this.player!.position.clone().add(new THREE.Vector3(0, -3, 0)));
-        const intersects = this.raycaster.intersectObjects(this.environment!.children!);
+        this.raycaster.set(this.player.position, this.player.position.clone().add(new THREE.Vector3(0, -3, 0)));
+        const intersects = this.raycaster.intersectObjects(this.environment.children!);
         if (intersects.length > 0) {
             this.isOnGround = true;
         } else {
@@ -161,13 +164,15 @@ export class Physics extends EventEmitter<PhysicsEvents> {
             const offset = Math.max(0, deltaVector.length() - 1e-5);
             deltaVector.normalize().multiplyScalar(offset);
 
-            this.player!.position.add(deltaVector);
+            this.player.position.add(deltaVector);
 
-            if (!this.isOnGround) {
-                deltaVector.normalize();
-                this.player!.velocity.addScaledVector(deltaVector, -deltaVector.dot(this.player!.velocity));
-            } else {
-                this.player!.velocity.y = 0;
+            if (this.player.velocity) {
+                if (!this.isOnGround) {
+                    deltaVector.normalize();
+                    this.player.velocity.addScaledVector(deltaVector, -deltaVector.dot(this.player.velocity));
+                } else {
+                    this.player.velocity.y = 0;
+                }
             }
         }
     }

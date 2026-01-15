@@ -34,7 +34,6 @@ export class Tiramysu extends Entity {
         this.add(this.collider);
 
         this.name = 'Tiramysu';
-        this.static = true;
         for (const child of this.children) {
             child.layers.enable(Layers.Environment);
         }

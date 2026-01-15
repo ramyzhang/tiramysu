@@ -27,7 +27,6 @@ export class NPC extends Entity {
         this.engine = engine;
         this.position.copy(position);
         this.name = name;
-        this.static = true;
 
         invisiblePlaceholder.geometry.computeBoundingSphere();
         const size = invisiblePlaceholder.geometry.boundingSphere!.radius * 3;
