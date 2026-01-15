@@ -53,8 +53,8 @@ The project is in active development. Recent work includes:
 ### Build & Development
 - **Module System**: ES6 modules (Node16 resolution)
 - **Target**: ES6
+- **Linting**: ESLint with TypeScript ESLint (`npm run lint` / `npm run lint:fix`)
 - **No Testing Framework**: Currently no test setup
-- **No Linting**: No ESLint or Prettier configured
 
 ### Browser Requirements
 - WebGL 2.0 support required
