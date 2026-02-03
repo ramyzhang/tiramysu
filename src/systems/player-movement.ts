@@ -6,7 +6,7 @@ import { EntityType } from '../entities/entity.js';
 import { PlayerSpawnPosition } from '../constants.js';
 
 export class PlayerMovementSystem extends System {
-    private player: Player | null = null;
+    private player: Player;
     private moveSpeed: number = 5.0; // Units per second
     private cameraDirection: THREE.Vector3 = new THREE.Vector3();
 
@@ -14,41 +14,13 @@ export class PlayerMovementSystem extends System {
 
     private tempVecA: THREE.Vector3 = new THREE.Vector3();
 
-    constructor(engine: Engine) {
+    constructor(engine: Engine, player: Player) {
         super(engine);
+        this.player = player;
         this.cameraDirection.copy(this.engine.camera.getWorldDirection(new THREE.Vector3()));
     }
 
-    /**
-     * Find and store the player entity from the entity registry.
-     */
-    private findPlayer(): Player | null {
-        if (this.player) {
-            // Check if player still exists in the registry
-            const entities = this.engine.entityRegistry.getEntities();
-            if (entities.find(e => e === this.player)) {
-                return this.player;
-            } else {
-                // Player was removed, clear reference
-                this.player = null;
-            }
-        }
-
-        // Try to find player in registry
-        const entities = this.engine.entityRegistry.getEntities();
-        for (const entity of entities) {
-            if (entity.entityType === EntityType.Player && entity instanceof Player) {
-                this.player = entity;
-                return this.player;
-            }
-        }
-
-        return null;
-    }
-
     update(delta: number): void {
-        const player = this.findPlayer();
-        if (!player) return;
     
         const input = this.engine.input;
         this.inputDirection.copy(input.pointerPosition);
@@ -64,9 +36,16 @@ export class PlayerMovementSystem extends System {
         if ((interactionSystem && interactionSystem.isCurrentlyInteracting()) ||
             (dialogueSystem && dialogueSystem.isActive())) {
             // Player is interacting or in dialogue, don't process movement
-            player.velocity.x = 0;
-            player.velocity.z = 0;
+            if (this.player.velocity) {
+                this.player.velocity.x = 0;
+                this.player.velocity.z = 0;
+            }
             return;
+        }
+
+        // Ensure velocity exists
+        if (!this.player.velocity) {
+            this.player.velocity = new THREE.Vector3(0, 0, 0);
         }
 
         if (input.pointerDown) {
@@ -84,19 +63,21 @@ export class PlayerMovementSystem extends System {
                 desiredLocalCameraAngle += 2 * Math.PI;
             }
 
-            player.lookAt(player.position.clone().add(newDir));
+            this.player.lookAt(this.player.position.clone().add(newDir));
 
-            player.velocity.x = newDir.x * this.moveSpeed;
-            player.velocity.z = newDir.z * this.moveSpeed;
+            this.player.velocity.x = newDir.x * this.moveSpeed;
+            this.player.velocity.z = newDir.z * this.moveSpeed;
         } else {
             // When not moving, zero out horizontal velocity
-            player.velocity.x = 0;
-            player.velocity.z = 0;
+            this.player.velocity.x = 0;
+            this.player.velocity.z = 0;
         }
 
-        if (player.position.y < -25) {
-            player.position.copy(PlayerSpawnPosition);
-            player.velocity.set(0, 0, 0);  // Reset velocity too
+        if (this.player.position.y < -25) {
+            this.player.position.copy(PlayerSpawnPosition);
+            if (this.player.velocity) {
+                this.player.velocity.set(0, 0, 0);  // Reset velocity too
+            }
         }
     }
 }

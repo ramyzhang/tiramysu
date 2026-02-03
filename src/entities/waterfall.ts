@@ -35,7 +35,6 @@ export class Waterfall extends Entity {
         super(mesh as THREE.Mesh, EntityType.Prop);
 
         this.name = 'Waterfall';
-        this.static = true;
         for (const child of this.children) {
             child.layers.enable(Layers.Ignore);
         }

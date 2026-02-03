@@ -10,7 +10,8 @@ import { Layers } from '../constants.js';
  * the camera and the player, ensuring the player is always visible.
  */
 export class CameraOcclusionSystem extends System {
-    private player: Player | null = null;
+    private player: Player;
+    private environment: THREE.Object3D;
     private raycaster: THREE.Raycaster;
     private environmentMeshes: THREE.Mesh[] = [];
     private meshMaterialData: Map<THREE.Mesh, {
@@ -34,41 +35,32 @@ export class CameraOcclusionSystem extends System {
     }
 
     /**
-     * Initializes the system by finding the player and collecting environment meshes.
+     * Initializes the system with direct references to player and environment.
      */
-    public init(): void {
-        // Find player
-        for (const entity of this.engine.entityRegistry.getEntities()) {
-            if (entity.entityType === EntityType.Player) {
-                this.player = entity as Player;
-                break;
-            }
-        }
+    public init(player: Player, environment: THREE.Object3D): void {
+        this.player = player;
+        this.environment = environment;
 
         // Collect all environment meshes
         this.collectEnvironmentMeshes();
     }
 
     /**
-     * Recursively collects all meshes from environment entities.
+     * Recursively collects all meshes from environment entity.
      */
     private collectEnvironmentMeshes(): void {
         this.environmentMeshes = [];
         this.meshMaterialData.clear();
 
-        for (const entity of this.engine.entityRegistry.getEntities()) {
-            if (entity.entityType === EntityType.Environment) {
-                this.traverseMeshes(entity, (mesh) => {
-                    // Skip the collider mesh (wireframe)
-                    if (mesh.name === 'collider' || (mesh.material as THREE.MeshBasicMaterial)?.wireframe) {
-                        return;
-                    }
-                    
-                    this.environmentMeshes.push(mesh);
-                    this.prepareMeshMaterials(mesh);
-                });
+        this.traverseMeshes(this.environment, (mesh) => {
+            // Skip the collider mesh (wireframe)
+            if (mesh.name === 'collider' || (mesh.material as THREE.MeshBasicMaterial)?.wireframe) {
+                return;
             }
-        }
+            
+            this.environmentMeshes.push(mesh);
+            this.prepareMeshMaterials(mesh);
+        });
     }
 
     /**
@@ -128,9 +120,6 @@ export class CameraOcclusionSystem extends System {
      * Updates the system, checking for occluding meshes and updating their transparency.
      */
     update(delta: number): void {
-        if (!this.player) {
-            return;
-        }
 
         // Get camera and player positions
         const cameraPos = this.tempVecA.copy(this.engine.camera.position);

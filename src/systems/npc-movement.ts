@@ -8,16 +8,20 @@ import { EntityType } from '../entities/entity.js';
 /**
  * System that handles NPC behavior, such as looking at the player
  * when they enter the NPC's collision sphere.
+ * Uses direct references instead of searching the registry.
  */
 export class NPCMovementSystem extends System {
-    private player: Player | null = null;
+    private player: Player;
+    private npcs: NPC[];
     private npcsInRange: Set<NPC> = new Set(); // Track NPCs currently in collision range
     private lookAtSpeed: number = 3.0; // Rotation speed multiplier
     private tempVecA: THREE.Vector3 = new THREE.Vector3();
     private unsubscribeCollision: (() => void) | null = null;
 
-    constructor(engine: Engine) {
+    constructor(engine: Engine, player: Player, npcs: NPC[]) {
         super(engine);
+        this.player = player;
+        this.npcs = npcs;
         
         // Subscribe to physics collision events
         this.unsubscribeCollision = this.engine.physics.on('interactableCollision', (data) => {
@@ -33,33 +37,6 @@ export class NPCMovementSystem extends System {
                 }
             }
         });
-    }
-
-    /**
-     * Find and store the player entity from the entity registry.
-     */
-    private findPlayer(): Player | null {
-        if (this.player) {
-            // Check if player still exists in the registry
-            const entities = this.engine.entityRegistry.getEntities();
-            if (entities.find(e => e === this.player)) {
-                return this.player;
-            } else {
-                // Player was removed, clear reference
-                this.player = null;
-            }
-        }
-
-        // Try to find player in registry
-        const entities = this.engine.entityRegistry.getEntities();
-        for (const entity of entities) {
-            if (entity.entityType === EntityType.Player && entity instanceof Player) {
-                this.player = entity;
-                return this.player;
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -99,13 +76,10 @@ export class NPCMovementSystem extends System {
     }
 
     update(delta: number): void {
-        const player = this.findPlayer();
-        if (!player) return;
-
         // Update lookAt for all NPCs currently in range
         for (const npc of this.npcsInRange) {
             // Make NPC look at player
-            this.lookAtSmooth(npc, player.position, delta);
+            this.lookAtSmooth(npc, this.player.position, delta);
         }
     }
 

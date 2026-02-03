@@ -30,6 +30,9 @@ export class Player extends Entity {
 
         super(mesh as THREE.Mesh, EntityType.Player);
 
+        // Initialize velocity for player (required for movement)
+        this.velocity = new THREE.Vector3(0, 0, 0);
+
         this.position.copy(PlayerSpawnPosition);
 
         this.name = 'Player';

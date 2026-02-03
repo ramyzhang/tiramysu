@@ -15,7 +15,6 @@ export class Prop extends Entity {
 
         this.position.copy(position);
         this.name = name;
-        this.static = true;
 
         // Set this entity and all children to Prop layer
         this.layers.set(Layers.Environment);

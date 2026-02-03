@@ -12,9 +12,11 @@ export class World {
     private scene: THREE.Scene;
     private entityRegistry: EntityRegistry;
     
-    private player!: Player;
-    private tiramysu!: Tiramysu;
+    public player!: Player;
+    public tiramysu!: Tiramysu;
+    
     private waterfall!: Waterfall;
+    private npcs: NPC[] = [];
 
     private cameraSystem!: CameraSystem;
     private debugUI!: DebugUI;
@@ -36,8 +38,8 @@ export class World {
         this.scene.fog = new THREE.Fog(Colours.pink, 0, 80);
         
         // -------------- initialize lighting --------------
-        // const ambientLight = new THREE.AmbientLight(0xffffff, 3.0);
-        // this.scene.add(ambientLight);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+        this.scene.add(ambientLight);
 
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
         directionalLight.position.set(10, 10, 10);
@@ -54,18 +56,22 @@ export class World {
         // -------------- initialize entities --------------
         this.spawn();
  
+        // -------------- initialize physics (needs entities) --------------
+        this.engine.physics.init(this.player, this.tiramysu);
+ 
         // -------------- initialize systems --------------
         this.cameraSystem = new CameraSystem(this.engine);
         this.cameraSystem.setPlayer(this.player);
 
         this.debugUI = new DebugUI(this.engine);
-        this.playerMovementSystem = new PlayerMovementSystem(this.engine);
+        // Pass direct references to systems - no registry searching needed
+        this.playerMovementSystem = new PlayerMovementSystem(this.engine, this.player);
         this.interactionSystem = new InteractionSystem(this.engine);
         this.dialogueSystem = new DialogueSystem(this.engine);
-        this.npcMovementSystem = new NPCMovementSystem(this.engine);
+        this.npcMovementSystem = new NPCMovementSystem(this.engine, this.player, this.npcs);
 
         this.cameraOcclusionSystem = new CameraOcclusionSystem(this.engine);
-        this.cameraOcclusionSystem.init();
+        this.cameraOcclusionSystem.init(this.player, this.tiramysu);
         
         this.particleSystem = new ParticleSystem(this.engine);
     }
@@ -102,9 +108,10 @@ export class World {
             console.error('Failed to load Theatre mesh:', error);
         });
 
-        // NPCs
+        // NPCs - store in array for direct access
         const liltao = new NPC(this.engine, LilTaoSpawnPosition, 'LilTao');
         liltao.initDialogueBubble(LilTaoDialogueBubbleOffset);
+        this.npcs.push(liltao);
         this.entityRegistry.add(liltao);
         this.engine.resources.loadMeshIntoEntity(liltao, '/models/tiramysu-liltao.glb', Layers.NPC).catch((error) => {
             console.error('Failed to load Liltao mesh:', error);
@@ -112,6 +119,7 @@ export class World {
 
         const meimei = new NPC(this.engine, MeimeiSpawnPosition, 'Meimei');
         meimei.initDialogueBubble(MeimeiDialogueBubbleOffset);
+        this.npcs.push(meimei);
         this.entityRegistry.add(meimei);
         this.engine.resources.loadMeshIntoEntity(meimei, '/models/tiramysu-meimei.glb', Layers.NPC).catch((error) => {
             console.error('Failed to load Meimei mesh:', error);
@@ -119,6 +127,7 @@ export class World {
 
         const purin = new NPC(this.engine, PurinSpawnPosition, 'Purin');
         purin.initDialogueBubble(PurinDialogueBubbleOffset);
+        this.npcs.push(purin);
         this.entityRegistry.add(purin);
         this.engine.resources.loadMeshIntoEntity(purin, '/models/tiramysu-purin.glb', Layers.NPC).catch((error) => {
             console.error('Failed to load Purin mesh:', error);

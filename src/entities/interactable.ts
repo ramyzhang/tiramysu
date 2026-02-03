@@ -11,7 +11,6 @@ export class Interactable extends Entity {
 
     constructor(mesh: THREE.Mesh, position: THREE.Vector3, name?: string, entityType: EntityType = EntityType.Interactable, shouldCreateSphere: boolean = true) {
         super(mesh, entityType);
-        this.static = true;
         this.position.copy(position);
         
         if (shouldCreateSphere) {
