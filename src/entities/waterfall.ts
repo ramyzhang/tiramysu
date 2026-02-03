@@ -24,7 +24,7 @@ export class Waterfall extends Entity {
             if (child instanceof THREE.Mesh && child.name === 'Waterfall') {
                 child.material = Waterfall.createWaterfallShaderMaterial();
             }
-            if (child instanceof THREE.Mesh && child.name === 'Foam') {
+            if (child instanceof THREE.Mesh && child.name.includes('Foam')) {
                 child.material = Waterfall.createFoamShaderMaterial();
             }
             if (child instanceof THREE.Mesh && child.name === 'Pond') {
@@ -130,19 +130,20 @@ export class Waterfall extends Entity {
                 void main() {
                     // Animate UVs downward
                     vec2 animatedUv = vUv;
-                    animatedUv.y -= uTime * uSpeed;
+                    animatedUv.y += uTime * uSpeed;
                     animatedUv.y /= 10.0;
+                    animatedUv = abs(mod(animatedUv, 2.0) - 1.0); // Ping-pong wrap UVs
                     
                     // Sample texture (now black and white)
                     vec4 texColor = texture2D(uTexture, animatedUv);
                     float pattern = texColor.r; // Use red channel since it's grayscale
                     
                     // Create gradient from top to bottom
-                    float gradientMix = pow(1.0 - vUv.y, uGradientPower);
-                    vec3 gradientColor = mix(uColorBottom, uColorTop, gradientMix);
+                    float gradientMix = pow(1.0 - animatedUv.y, uGradientPower);
+                    vec3 gradientColor = mix(uColorTop, uColorBottom, gradientMix);
                     
                     // Add noise variation
-                    vec2 noiseUv = vUv * uNoiseScale + uTime * 0.1;
+                    vec2 noiseUv = animatedUv * uNoiseScale + uTime * 0.1;
                     float noiseValue = noise(noiseUv);
                     vec3 noiseColor = mix(vec3(1.0), vec3(noiseValue), uNoiseStrength);
                     
@@ -176,11 +177,11 @@ export class Waterfall extends Entity {
                 uTime: { value: 0 },
                 uTexture: { value: pondTexture },
                 uFrequency: { value: 10.0 },
-                uRippleRate: { value: 70.0 },
-                uAmplitude: { value: 1.1 },
-                uWaveAmplitude: { value: 0.5 },
-                uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+                uRippleRate: { value: 50.0 },
+                uAmplitude: { value: 1.0 },
+                uWaveAmplitude: { value: 1.0 },
                 uGradientPower: { value: 1.5 },
+                uCenterPosition: { value: new THREE.Vector2(0.6, 0.35) },
                 uColorTop: { value: new THREE.Color(Colours.darkOrange) },
                 uColorBottom: { value: new THREE.Color(Colours.lightOrange) }
             },
@@ -192,6 +193,7 @@ export class Waterfall extends Entity {
                 uniform float uRippleRate;
                 uniform float uAmplitude;
                 uniform float uWaveAmplitude;
+                uniform vec2 uCenterPosition;
                 
                 varying vec2 vUv;
                 varying vec4 vFragCoord;
@@ -200,7 +202,7 @@ export class Waterfall extends Entity {
                     vUv = uv;
                     
                     // Calculate ripple effect similar to fragment shader
-                    vec2 centerPosition = uv - vec2(0.5, 0.2);
+                    vec2 centerPosition = vUv - uCenterPosition;
                     float centerDistance = length(centerPosition);
                     
                     // Create ripple that dissipates near edges
@@ -210,7 +212,7 @@ export class Waterfall extends Entity {
                     
                     // Apply ripple to Y position
                     vec3 newPosition = position;
-                    newPosition.y += ripple * uWaveAmplitude * 0.1; // Scale down for vertex movement
+                    newPosition.y += ripple * uWaveAmplitude * 0.01; // Scale down for vertex movement
                     
                     vec4 modelViewPosition = modelViewMatrix * vec4(newPosition, 1.0);
                     gl_Position = projectionMatrix * modelViewPosition;
@@ -229,13 +231,13 @@ export class Waterfall extends Entity {
                 uniform float uGradientPower;
                 uniform vec3 uColorTop;
                 uniform vec3 uColorBottom;
-                uniform vec2 uResolution;
+                uniform vec2 uCenterPosition;
                 
                 varying vec2 vUv;
                 varying vec4 vFragCoord;
                 
                 void main() {
-                    vec2 centerPosition = vUv - vec2(0.5, 0.2);
+                    vec2 centerPosition = vUv - uCenterPosition;
                     float centerDistance = length(centerPosition);
                     
                     // Create ripple that dissipates near edges
@@ -250,7 +252,7 @@ export class Waterfall extends Entity {
                     }
                     
                     // Wrap UVs to ensure texture repeats (prevents black edges)
-                    distortedUv = fract(distortedUv);
+                    distortedUv = abs(mod(distortedUv, 2.0) - 1.0); // Ping-pong wrap
                     
                     // Sample the texture with distorted UVs
                     float pattern = texture2D(uTexture, distortedUv).r;
@@ -276,7 +278,7 @@ export class Waterfall extends Entity {
         return new THREE.ShaderMaterial({
             uniforms: {
                 uTime: { value: 0 },
-                uWaveAmplitude: { value: 0.8 },
+                uWaveAmplitude: { value: 0.2 },
                 uWaveFrequency: { value: 2.0 },
                 uWaveSpeed: { value: 70.0 }
             },

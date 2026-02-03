@@ -326,10 +326,10 @@ export class ExampleSystem extends System {
 ```
 
 **Comments**:
-- Use JSDoc for public APIs only
-- Prefer self-documenting code over comments
-- Add comments for complex algorithms or non-obvious logic
-- Section comments for major divisions (e.g., `// -------------- initialize lighting --------------`)
+- Keep comments minimal — do not comment obvious or self-evident code
+- Only add comments for non-obvious logic, workarounds, or "why" explanations
+- Avoid JSDoc on properties/methods where the name and type are self-documenting
+- Section comments for major divisions are OK (e.g., `// -------------- initialize lighting --------------`)
 
 **Error Handling**:
 ```typescript

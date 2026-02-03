@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Engine } from './engine/engine.js';
 import { Colours, Layers } from './constants.js';
-import { EntityRegistry, Player, Tiramysu, NPC, Waterfall, Prop } from './entities/index.js';
+import { EntityRegistry, Player, Tiramysu, NPC, Waterfall, Prop, TanghuluForest } from './entities/index.js';
 import { CameraSystem } from './systems/camera.js';
 import { DebugUI } from './systems/debug-ui.js';
 import { PlayerMovementSystem, InteractionSystem, DialogueSystem, CameraOcclusionSystem, NPCMovementSystem, ParticleSystem } from './systems/index.js';
@@ -108,12 +108,6 @@ export class World {
             console.error('Failed to load Theatre mesh:', error);
         });
 
-        const tanghulu_sgs = new Prop(new THREE.Vector3(6.5, 5, -22), 'Tanghulu');
-        this.entityRegistry.add(tanghulu_sgs);
-        this.engine.resources.loadMeshIntoEntity(tanghulu_sgs, '/models/tanghulu-sgs.glb', Layers.Ignore).catch((error) => {
-            console.error('Failed to load Tanghulu SGS mesh:', error);
-        });
-
         // NPCs - store in array for direct access
         const liltao = new NPC(this.engine, LilTaoSpawnPosition, 'LilTao');
         liltao.initDialogueBubble(LilTaoDialogueBubbleOffset);
@@ -137,6 +131,13 @@ export class World {
         this.entityRegistry.add(purin);
         this.engine.resources.loadMeshIntoEntity(purin, '/models/tiramysu-purin.glb', Layers.NPC).catch((error) => {
             console.error('Failed to load Purin mesh:', error);
+        });
+
+        // Tanghulu forest (lazy-loaded, does not block init)
+        const tanghuluForest = new TanghuluForest(this.engine);
+        this.scene.add(tanghuluForest);
+        tanghuluForest.spawn(this.tiramysu.collider as THREE.Mesh).catch((error) => {
+            console.error('Failed to spawn tanghulu forest:', error);
         });
     }
 
