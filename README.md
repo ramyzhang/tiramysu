@@ -12,17 +12,18 @@ To-Dos:
 - Message in a bottle system
 - Animations
 - Fix texture sizing for environment
-- Add OnGround check and put jumping back in
-- Shaders for water
+- Add movement mechanics (jumping, gliding)
 - Synthesizers with Web Audio API for SFX and ambience
 
 Completed Features:
 - Dialogue system and dialogue UI
 - Event emitter pattern
 - Debug utilities
+- Shaders for water
 - Overall project structure (engine, entities, world, constants, etc.)
 - Learned how to instantiate objects and add textures
 - Drew objects to the screen
 - Player controller (abeto-style)
 - Collision, collision resolution, gravity
-- Player model
+- Player model and NPC models
+- Level design
