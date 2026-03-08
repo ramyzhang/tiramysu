@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Engine } from '../engine/engine.js';
-import { Layers, TanghuluSpawnZones, TanghuluDensity, TanghuluScaleRange, TanghuluMaxTilt } from '../constants.js';
+import { Layers, TanghuluSpawnZones, TanghuluDensity, TanghuluScaleRange, TanghuluMaxTilt, Colours } from '../constants.js';
 
 export interface TanghuluSpawnZone {
     min: THREE.Vector2;

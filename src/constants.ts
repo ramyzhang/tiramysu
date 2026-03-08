@@ -36,7 +36,7 @@ export const PurinDialogueBubbleOffset = new THREE.Vector3(0.4, 1, 0);
 
 // Tanghulu forest configuration
 export const TanghuluSpawnZones = [
-    { min: new THREE.Vector2(18, -41), max: new THREE.Vector2(1, 43) },
+    { min: new THREE.Vector2(13, -40), max: new THREE.Vector2(50, 5) },
     { min: new THREE.Vector2(5, -25), max: new THREE.Vector2(15, -15) },
 ];
 export const TanghuluDensity = 0.06; // trees per square unit of area

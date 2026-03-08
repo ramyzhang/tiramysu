@@ -108,6 +108,12 @@ export class World {
             console.error('Failed to load Theatre mesh:', error);
         });
 
+        const candyBall = new Prop(new THREE.Vector3(-23, 9, -25), 'CandyBall');
+        this.entityRegistry.add(candyBall);
+        this.engine.resources.loadMeshIntoEntity(candyBall, '/models/tiramysu-candyball.glb', Layers.Ignore).catch((error) => {
+            console.error('Failed to load Candy Ball mesh:', error);
+        });
+
         // NPCs - store in array for direct access
         const liltao = new NPC(this.engine, LilTaoSpawnPosition, 'LilTao');
         liltao.initDialogueBubble(LilTaoDialogueBubbleOffset);

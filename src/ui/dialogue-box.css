@@ -1,0 +1,188 @@
+/* ── Dialogue Box ── */
+
+.dialogue-container {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    width: 500px;
+    max-width: calc(100vw - 40px);
+    max-height: 60vh;
+    box-sizing: border-box;
+    background: transparent;
+    padding: 20px;
+    font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    z-index: 100000;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dialogue-container.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+/* ── Portrait (hidden by default, shown per-message row) ── */
+
+.dialogue-portrait {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 12px rgba(255, 107, 181, 0.3);
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.4);
+    transition: transform 0.2s ease;
+    display: none;
+}
+
+/* ── Messages container ── */
+
+.dialogue-messages {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+    justify-content: flex-end;
+}
+
+/* ── Message row (avatar + bubble) ── */
+
+.dialogue-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    animation: dialogue-fade-in-up 0.3s ease-out;
+    opacity: 1;
+    transition: opacity 0.5s ease-out;
+}
+
+/* ── Avatar in message rows ── */
+
+.dialogue-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(255, 107, 181, 0.2);
+    flex-shrink: 0;
+}
+
+/* ── Message bubble ── */
+
+.dialogue-bubble {
+    flex: 1;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(255, 229, 180, 0.95) 0%, rgba(255, 182, 193, 0.95) 50%, rgba(255, 209, 220, 0.95) 100%);
+    border-radius: 24px;
+    box-shadow: 0 2px 8px rgba(255, 107, 181, 0.3);
+    font-size: 15px;
+    color: #5A4A4A;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+/* ── Typing indicator ── */
+
+.dialogue-typing {
+    display: none;
+    flex-direction: row;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.dialogue-typing.visible {
+    display: flex;
+}
+
+.dialogue-typing-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(255, 107, 181, 0.2);
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.4);
+    background-size: cover;
+    background-position: center;
+}
+
+.dialogue-typing-bubble {
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(255, 229, 180, 0.9) 0%, rgba(255, 182, 193, 0.9) 50%, rgba(255, 209, 220, 0.9) 100%);
+    border-radius: 24px;
+    box-shadow: 0 2px 8px rgba(255, 107, 181, 0.3);
+    width: fit-content;
+}
+
+.dialogue-typing-dot {
+    display: inline-block;
+    margin: 0 2px;
+    font-size: 12px;
+    color: #8B4513;
+    animation: dialogue-typing-dot 1.4s ease-in-out infinite;
+}
+
+/* ── Exit button ── */
+
+.dialogue-exit {
+    display: none;
+    width: 30%;
+    margin: 0 auto;
+    margin-top: 8px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #FFFFFF 0%, #FFF0F5 100%);
+    border: 2px solid #FFB6C1;
+    border-radius: 24px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #8B4513;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 12px rgba(255, 182, 193, 0.4);
+    transition: all 0.2s ease;
+}
+
+.dialogue-exit.visible {
+    display: block;
+}
+
+.dialogue-exit:hover {
+    background: linear-gradient(135deg, #FFFFFF 0%, #FFE4E1 100%);
+    border-color: #FF91A4;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 182, 193, 0.6);
+}
+
+/* ── Animations ── */
+
+@keyframes dialogue-typing-dot {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.7;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+@keyframes dialogue-fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Entity, EntityType } from '../entities/entity.js';
-import { updatePointerPosition } from '../utils/utils.js';
 import { Layers } from '../constants.js';
 
 /**
