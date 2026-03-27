@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Player } from '../entities/player.js';
-import { PlayerSpawnDirection, PlayerSpawnPosition } from '../constants.js';
-import { lerp } from 'three/src/math/MathUtils.js';
+import { GlobalUp, PlayerSpawnDirection, PlayerSpawnPosition } from '../constants.js';
+import { dampAngle } from "maath/easing";
 
 export enum CameraMode {
     Player = 'player',
@@ -29,8 +29,7 @@ export class CameraSystem extends System {
     private freeCameraRotationY = 0;
     private lastCKeyState: boolean = false;
 
-    private tempVecA: THREE.Vector3 = new THREE.Vector3();
-    private tempVecB: THREE.Vector3 = new THREE.Vector3();
+    private tempVec: THREE.Vector3 = new THREE.Vector3();
 
     constructor(engine: Engine) {
         super(engine);
@@ -50,7 +49,7 @@ export class CameraSystem extends System {
             // Initialize free camera at current camera position
             this.freeCameraPosition.copy(this.engine.camera.position);
             // Extract yaw from world direction so pitch/roll from lookAt() don't bleed in
-            const dir = this.tempVecA;
+            const dir = this.tempVec;
             this.engine.camera.getWorldDirection(dir);
             this.freeCameraRotationY = Math.atan2(-dir.x, -dir.z);
         }
@@ -81,9 +80,19 @@ export class CameraSystem extends System {
         
         // Only reset camera angle toward player when there's no movement input
         const rotateT = 1 - Math.exp(-this.cameraResetSpeed * delta);
-        this.cameraRotationY = lerp(this.cameraRotationY, playerRotationY, rotateT);
 
-        const newPosition = this.tempVecA;
+        // Build quaternions from Y-axis rotations only
+        const qFrom = new THREE.Quaternion().setFromAxisAngle(GlobalUp, this.cameraRotationY);
+        const qTo   = new THREE.Quaternion().setFromAxisAngle(GlobalUp, playerRotationY);
+
+        // Slerp (t = 0..1)
+        const qCurrent = qFrom.clone().slerp(qTo, rotateT);
+
+        // Apply to your object — only Y is affected
+        const euler = new THREE.Euler().setFromQuaternion(qCurrent, 'YXZ');
+        this.cameraRotationY = euler.y;
+
+        const newPosition = this.tempVec;
         newPosition.copy(this.player.position);
         newPosition.x += Math.sin(this.cameraRotationY) * this.cameraDistance;
         newPosition.y += this.cameraHeight;
