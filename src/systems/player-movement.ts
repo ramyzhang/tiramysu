@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Player } from '../entities/player.js';
-import { EntityType } from '../entities/entity.js';
 import { PlayerSpawnPosition } from '../constants.js';
 
 export class PlayerMovementSystem extends System {

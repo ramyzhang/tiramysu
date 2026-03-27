@@ -2,7 +2,6 @@ import * as THREE from 'three';
 
 import { Engine } from './engine.js';
 import { Entity, EntityType } from '../entities/entity.js';
-import { Layers } from '../constants.js';
 import { Player, Interactable, NPC } from '../entities/index.js';
 import { EventEmitter } from '../utils/event-emitter.js';
 
@@ -22,12 +21,14 @@ export interface PhysicsEvents {
 
 export class Physics extends EventEmitter<PhysicsEvents> {
     private engine: Engine;
-    private player: Entity;
+    private player: Player;
     private environment: THREE.Mesh;
-    public isOnGround: boolean = false;
+    private playerHeight: number = 0;
 
     private tempVecA: THREE.Vector3 = new THREE.Vector3();
     private tempVecB: THREE.Vector3 = new THREE.Vector3();
+    private tempCapsuleStart: THREE.Vector3 = new THREE.Vector3();
+    private tempCapsuleEnd: THREE.Vector3 = new THREE.Vector3();
     private tempLine: THREE.Line3 = new THREE.Line3();
     private tempMat: THREE.Matrix4 = new THREE.Matrix4();
     private tempAABB: THREE.Box3 = new THREE.Box3();
@@ -36,6 +37,8 @@ export class Physics extends EventEmitter<PhysicsEvents> {
     private raycaster: THREE.Raycaster;
 
     private collidingEntities: Set<Entity> = new Set();
+
+    public isOnGround: boolean = false;
 
     constructor(_engine: Engine) {
         super();
@@ -46,7 +49,7 @@ export class Physics extends EventEmitter<PhysicsEvents> {
         this.raycaster = new THREE.Raycaster();
     }
 
-    init(player: Entity, environment: Entity): void {
+    init(player: Player, environment: Entity): void {
         this.player = player;
         // Environment's collider is the actual mesh we need
         this.environment = environment.collider as THREE.Mesh;
@@ -54,6 +57,7 @@ export class Physics extends EventEmitter<PhysicsEvents> {
             console.warn('Environment entity missing collider');
         }
         this.raycaster.layers.enableAll();
+        this.playerHeight = this.player.capsule.start.distanceTo(this.player.capsule.end) + this.player.capsule.radius;
     }
 
     update(delta: number): void {
@@ -77,34 +81,38 @@ export class Physics extends EventEmitter<PhysicsEvents> {
         if (!this.player.velocity) {
             this.player.velocity = new THREE.Vector3(0, 0, 0);
         }
-        this.player.velocity.y -= 9.8 * delta * (this.player as Player).weight;
+        this.player.velocity.y -= 9.8 * delta * this.player.weight;
     }
 
     checkCollisions(): void { 
         this.tempMat.copy(this.environment!.matrixWorld).invert();
-        this.tempLine.copy((this.player as Player).capsule.lineSegment)
+        this.tempCapsuleStart.copy(this.player.capsule.start)
             .applyMatrix4(this.player!.matrixWorld)
             .applyMatrix4(this.tempMat);
-    
+        this.tempCapsuleEnd.copy(this.player.capsule.end)
+            .applyMatrix4(this.player!.matrixWorld)
+            .applyMatrix4(this.tempMat);
+        this.tempLine = new THREE.Line3(this.tempCapsuleStart, this.tempCapsuleEnd);
+
         this.tempAABB.setFromObject(this.player!);
-        const radius = (this.player as Player).capsule.radius;
+        const radius = this.player.capsule.radius;
     
         // environmental collisions (i.e. the terrain)
         (this.environment! as THREE.Mesh).geometry.boundsTree?.shapecast({
-            intersectsBounds: box => box.intersectsBox(this.tempAABB),
+            intersectsBounds: box => this.player.capsule.intersectsBox(box),
     
             intersectsTriangle: (tri) => {
                 const triPoint = this.tempVecA;
                 const playerPoint = this.tempVecB;
-    
+                
                 const distance = tri.closestPointToSegment(this.tempLine, triPoint, playerPoint);
                 if (distance < radius) {
                     const depth = radius - distance;
                     const direction = playerPoint.sub(triPoint).normalize();
     
                     // Accumulate all corrections into tempLine
-                    this.tempLine.start.addScaledVector(direction, depth);
-                    this.tempLine.end.addScaledVector(direction, depth);
+                    this.tempCapsuleStart.addScaledVector(direction, depth);
+                    this.tempCapsuleEnd.addScaledVector(direction, depth);
                 }
             }
         });
@@ -150,22 +158,16 @@ export class Physics extends EventEmitter<PhysicsEvents> {
     
         const hadCollision = deltaVector.length() > 0.005;
 
-        // Raycast straight down from the player's position to check if we are on the ground
+        // isOnGround check (raycasting downwards)
         this.raycaster.set(this.player.position, new THREE.Vector3(0, -1, 0));
-
-        const capsule = (this.player as Player).capsule;
-        const dist = capsule.lineSegment.distance() + capsule.radius;
         const intersects = this.raycaster.intersectObject(this.environment);
-        if (intersects.length > 0 && intersects[0].distance < (dist + 0.2)) {
+        if (intersects.length > 0 && intersects[0].distance < (this.playerHeight + 0.2)) {
             this.isOnGround = true;
         } else {
             this.isOnGround = false;
         }
 
-        // Always zero out downward velocity when grounded, regardless of collision threshold.
-        // Without this, gravity accumulates across frames where the correction is too small
-        // to count as a collision (< 0.005), causing the velocity to alternate between 0 and
-        // growing negative values each frame.
+        // always zero out downward velocity when grounded, regardless of collision threshold
         if (this.isOnGround && this.player.velocity && this.player.velocity.y < 0) {
             this.player.velocity.y = 0;
         }

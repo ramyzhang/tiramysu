@@ -3,14 +3,10 @@ import * as THREE from 'three';
 import { Entity, EntityType } from "./entity.js";
 import { Layers, PlayerSpawnPosition, PlayerSpawnDirection } from '../constants.js';
 import { Engine } from '../engine/engine.js';
-
-export class Capsule {
-    radius: number = 0.25;
-    lineSegment: THREE.Line3 = new THREE.Line3(new THREE.Vector3(), new THREE.Vector3(0, -0.5, 0));
-}
+import { Capsule } from 'three/addons/math/Capsule.js';
 
 export class Player extends Entity {    
-    capsule: Capsule = new Capsule();
+    capsule: Capsule = new Capsule(new THREE.Vector3(), new THREE.Vector3(0, -0.6, 0), 0.15);
     weight: number = 2;
 
     constructor(engine: Engine) {

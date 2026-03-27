@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Entity, EntityType } from '../entities/entity.js';
+import { Player } from '../entities/index.js';
 import { Layers } from '../constants.js';
 
 /**
@@ -23,6 +24,8 @@ export class DebugUI extends System {
     private cachedCameraPosition: THREE.Vector3 = new THREE.Vector3();
     private cachedCameraDirection: THREE.Vector3 = new THREE.Vector3();
     private debugSphere: THREE.Mesh | null = null;
+    private debugCapsule: THREE.Mesh | null = null;
+    private debugCapsuleMidpoint: THREE.Vector3 = new THREE.Vector3();
 
     constructor(engine: Engine) {
         super(engine);
@@ -78,6 +81,7 @@ export class DebugUI extends System {
         this.raycaster.layers.enable(Layers.NPC);
 
         this.createDebugSphere();
+        this.createDebugCapsule();
     }
 
     update(delta: number): void {
@@ -97,6 +101,7 @@ export class DebugUI extends System {
 
         // Update debug sphere using shared intersection results
         this.updateDebugSphere();
+        this.updateDebugCapsule();
 
         if (this.selectedEntity) {
             // Update velocity cache every 20 frames
@@ -221,6 +226,35 @@ export class DebugUI extends System {
         `;
     }
 
+    private createDebugCapsule(): void {
+        const entities = this.engine.entityRegistry.getEntities();
+        const player = entities.find(e => e instanceof Player) as Player | undefined;
+        if (!player) return;
+
+        const { radius, start, end } = player.capsule;
+        const length = start.distanceTo(end);
+        const geometry = new THREE.CapsuleGeometry(radius, length, 4, 8);
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+        this.debugCapsule = new THREE.Mesh(geometry, material);
+        this.debugCapsule.name = 'DebugCapsule';
+        this.engine.scene.add(this.debugCapsule);
+    }
+
+    private updateDebugCapsule(): void {
+        if (!this.debugCapsule) return;
+
+        const entities = this.engine.entityRegistry.getEntities();
+        const player = entities.find(e => e instanceof Player) as Player | undefined;
+        if (!player) return;
+
+        // Transform the midpoint between start and end into world space
+        this.debugCapsuleMidpoint
+            .addVectors(player.capsule.start, player.capsule.end)
+            .multiplyScalar(0.5)
+            .applyMatrix4(player.matrixWorld);
+        this.debugCapsule.position.copy(this.debugCapsuleMidpoint);
+    }
+
     /**
      * Creates a debug sphere mesh for visualizing interaction raycast hits.
      */
@@ -260,6 +294,10 @@ export class DebugUI extends System {
         if (this.debugSphere) {
             this.engine.scene.remove(this.debugSphere);
             this.debugSphere = null;
+        }
+        if (this.debugCapsule) {
+            this.engine.scene.remove(this.debugCapsule);
+            this.debugCapsule = null;
         }
         if (this.infoDiv && this.infoDiv.parentElement) {
             this.infoDiv.parentElement.removeChild(this.infoDiv);
