@@ -2,28 +2,33 @@ import * as THREE from 'three';
 import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Player } from '../entities/player.js';
-import { PlayerSpawnPosition } from '../constants.js';
+import { PlayerSpawnPosition, GlobalUp } from '../constants.js';
 
 export class PlayerMovementSystem extends System {
     private player: Player;
-    private moveSpeed: number = 5.0; // Units per second
+    private moveSpeed: number = 8.0; // Units per second
+    private acceleration: number = 12.0; // Higher = snappier, lower = floatier
     private cameraDirection: THREE.Vector3 = new THREE.Vector3();
 
     private inputDirection: THREE.Vector2 = new THREE.Vector2();
 
     private tempVecA: THREE.Vector3 = new THREE.Vector3();
+    private targetVelocity: THREE.Vector3 = new THREE.Vector3();
 
     constructor(engine: Engine, player: Player) {
         super(engine);
         this.player = player;
-        this.cameraDirection.copy(this.engine.camera.getWorldDirection(new THREE.Vector3()));
+        this.engine.camera.getWorldDirection(this.cameraDirection);
     }
 
     update(delta: number): void {
+        if (!this.player.velocity)
+            return;
+
         const input = this.engine.input;
         this.inputDirection.copy(input.pointerPosition);
 
-        this.cameraDirection = this.engine.camera.getWorldDirection(this.cameraDirection);
+        this.engine.camera.getWorldDirection(this.cameraDirection);
         this.cameraDirection.y = 0;
         this.cameraDirection.normalize();
 
@@ -33,26 +38,19 @@ export class PlayerMovementSystem extends System {
         
         if ((interactionSystem && interactionSystem.isCurrentlyInteracting()) ||
             (dialogueSystem && dialogueSystem.isActive())) {
-            // Player is interacting or in dialogue, don't process movement
-            if (this.player.velocity) {
-                this.player.velocity = new THREE.Vector3(); // zero out
-            }
+            // player is interacting or in dialogue, don't process movement
+            this.player.velocity.set(0, 0, 0);
             return;
-        }
-
-        // Ensure velocity exists
-        if (!this.player.velocity) {
-            this.player.velocity = new THREE.Vector3(0, 0, 0);
         }
 
         if (input.pointerDown) {
             let desiredLocalCameraAngle = Math.atan2(this.inputDirection.y, this.inputDirection.x);
 
             // get the right vector of the camera
-            this.tempVecA = this.cameraDirection.clone().cross(new THREE.Vector3(0, 1, 0));
+            this.tempVecA = this.cameraDirection.clone().cross(GlobalUp);
             const newDir = this.tempVecA;
 
-            newDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), desiredLocalCameraAngle);
+            newDir.applyAxisAngle(GlobalUp, desiredLocalCameraAngle);
             newDir.normalize();
 
             // normalize to [0, 2π]
@@ -62,13 +60,15 @@ export class PlayerMovementSystem extends System {
 
             this.player.lookAt(this.player.position.clone().add(newDir));
 
-            this.player.velocity.x = newDir.x * this.moveSpeed;
-            this.player.velocity.z = newDir.z * this.moveSpeed;
+            this.targetVelocity.set(newDir.x * this.moveSpeed, 0, newDir.z * this.moveSpeed);
         } else {
-            // When not moving, zero out horizontal velocity
-            this.player.velocity.x = 0;
-            this.player.velocity.z = 0;
+            this.targetVelocity.set(0, 0, 0);
         }
+
+        // Lerp horizontal velocity toward target (leave Y alone — owned by physics)
+        const t = 1 - Math.exp(-this.acceleration * delta);
+        this.player.velocity.x += (this.targetVelocity.x - this.player.velocity.x) * t;
+        this.player.velocity.z += (this.targetVelocity.z - this.player.velocity.z) * t;
 
         if (this.player.position.y < -25) {
             this.player.position.copy(PlayerSpawnPosition);

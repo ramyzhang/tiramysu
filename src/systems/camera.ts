@@ -3,6 +3,7 @@ import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Player } from '../entities/player.js';
 import { PlayerSpawnDirection, PlayerSpawnPosition } from '../constants.js';
+import { lerp } from 'three/src/math/MathUtils.js';
 
 export enum CameraMode {
     Player = 'player',
@@ -21,6 +22,7 @@ export class CameraSystem extends System {
     private readonly cameraDistance = 5;
     private readonly cameraResetSpeed = 0.5;
     private readonly cameraFollowSpeed = 3;
+    private cameraRotationY = 0;
     
     // Free camera settings
     private freeCameraSpeed = 10.0;
@@ -49,7 +51,10 @@ export class CameraSystem extends System {
         if (this.currentMode === CameraMode.Free) {
             // Initialize free camera at current camera position
             this.freeCameraPosition.copy(this.engine.camera.position);
-            this.freeCameraRotationY = this.engine.camera.rotation.y;
+            // Extract yaw from world direction so pitch/roll from lookAt() don't bleed in
+            const dir = this.tempVecA;
+            this.engine.camera.getWorldDirection(dir);
+            this.freeCameraRotationY = Math.atan2(-dir.x, -dir.z);
         }
     }
 
@@ -73,23 +78,25 @@ export class CameraSystem extends System {
     private updatePlayerCamera(delta: number): void {
         if (!this.player) return;
         
+        // current direction of player
         this.cameraPosition.copy(this.engine.camera.position);
         this.engine.camera.getWorldDirection(this.cameraDirection);
         this.player.getWorldDirection(this.playerDirection);
-        
+
+        const resetT = 1 - Math.exp(-this.cameraResetSpeed * delta);
+        const playerRotationY =  Math.atan2(-this.playerDirection.x, -this.playerDirection.z);
+        this.cameraRotationY = lerp(this.cameraRotationY, playerRotationY, resetT);
+
         const newPosition = this.tempVecA;
-        newPosition.copy(this.player.position).sub(this.playerDirection.clone().multiplyScalar(this.cameraDistance));
-        newPosition.y += this.cameraHeight;
+        newPosition.set(
+            this.player.position.x + Math.sin(this.cameraRotationY) * this.cameraDistance,
+            this.player.position.y + this.cameraHeight,
+            this.player.position.z + Math.cos(this.cameraRotationY) * this.cameraDistance
+        );
 
-        const targetPlayerFollowPosition = this.tempVecB;
-        targetPlayerFollowPosition.copy(this.player.position).sub(this.cameraDirection.clone().multiplyScalar(this.cameraDistance));
-        
-        this.engine.camera.position.lerp(targetPlayerFollowPosition, delta * this.cameraFollowSpeed); // Follow the player
-        this.engine.camera.position.lerp(newPosition, delta * this.cameraResetSpeed); // slowly reset to the same direction as the player
-
-        this.engine.camera.position.y = THREE.MathUtils.lerp(this.engine.camera.position.y, newPosition.y, delta * this.cameraFollowSpeed);
-
-        this.engine.camera.lookAt(this.player.position); 
+        const followT = 1 - Math.exp(-this.cameraFollowSpeed * delta);
+        this.engine.camera.position.lerp(newPosition, followT);
+        this.engine.camera.lookAt(this.player.position);
     }
 
     private updateFreeCamera(delta: number): void {
@@ -133,7 +140,7 @@ export class CameraSystem extends System {
             this.freeCameraPosition.add(moveVector);
         }
 
-        this.engine.camera.rotation.y = this.freeCameraRotationY;
+        this.engine.camera.rotation.copy(new THREE.Euler(0, this.freeCameraRotationY, 0));
         this.engine.camera.position.copy(this.freeCameraPosition);
     }
 }

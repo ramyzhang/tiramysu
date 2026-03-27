@@ -35,6 +35,6 @@ export class Player extends Entity {
         for (const child of this.children) {
             child.layers.enable(Layers.Player);
         }
-        this.lookAt(PlayerSpawnPosition.add(PlayerSpawnDirection));
+        this.lookAt(PlayerSpawnPosition.clone().add(PlayerSpawnDirection));
     }
 }
