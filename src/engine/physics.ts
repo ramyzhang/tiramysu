@@ -2,7 +2,6 @@ import * as THREE from 'three';
 
 import { Engine } from './engine.js';
 import { Entity, EntityType } from '../entities/entity.js';
-import { Layers } from '../constants.js';
 import { Player, Interactable, NPC } from '../entities/index.js';
 import { EventEmitter } from '../utils/event-emitter.js';
 
@@ -68,25 +67,34 @@ export class Physics extends EventEmitter<PhysicsEvents> {
 
         this.gravity(delta);
 
-        this.checkCollisions();  // Modifies tempLine
-        this.resolveCollisions(delta);  // Uses tempLine
-
         if (this.player.velocity) {
-            // (hopefully) prevent tunnelling
-            const maxFallSpeed = this.player.capsule.radius / delta;
-            if (this.player.velocity.y < -maxFallSpeed)
-                this.player.velocity.y = -maxFallSpeed;
-
             this.player.position.addScaledVector(this.player.velocity, delta);
         }
-        this.player.updateMatrixWorld();
+        this.player.updateMatrixWorld(); // must refresh before collision detection reads matrixWorld
+
+        this.checkCollisions();  // Modifies tempLine
+        this.resolveCollisions(delta);  // Uses tempLine
     }
 
     gravity(delta: number): void {
         if (!this.player.velocity) {
             this.player.velocity = new THREE.Vector3(0, 0, 0);
         }
-        this.player.velocity.y -= 9.8 * delta * this.player.weight;
+
+        // check is on ground
+        this.raycaster.set(this.player.position, new THREE.Vector3(0, -1, 0));
+        const intersects = this.raycaster.intersectObjects([this.environment]);
+        if (intersects.length > 0 && intersects[0].distance <= this.playerHalfHeight + 0.1) {
+            this.isOnGround = true;
+        } else {
+            this.isOnGround = false;
+            this.player.velocity.y -= 9.8 * delta * this.player.weight;
+
+            // (hopefully) prevent tunnelling
+            const maxFallSpeed = this.player.capsule.radius / delta;
+            if (this.player.velocity.y < -maxFallSpeed)
+                this.player.velocity.y = -maxFallSpeed;
+        }
     }
 
     checkCollisions(): void {  // Return void, modify tempLine directly
@@ -153,7 +161,7 @@ export class Physics extends EventEmitter<PhysicsEvents> {
         }
     }
     
-    resolveCollisions(delta: number): void {
+    resolveCollisions(): void {
         if (!this.player.velocity)
             return;
 
@@ -165,27 +173,17 @@ export class Physics extends EventEmitter<PhysicsEvents> {
     
         const hadCollision = deltaVector.length() > 0.005;
 
-        // check is on ground
-        this.raycaster.set(this.player.position, new THREE.Vector3(0, -1, 0));
-        const intersects = this.raycaster.intersectObjects([this.environment]);
-        if (intersects.length > 0 && intersects[0].distance <= this.playerHalfHeight) {
-            this.isOnGround = true;
-        } else {
-            this.isOnGround = false;
-        }
-
         if (hadCollision) {
             const offset = Math.max(0, deltaVector.length() - 1e-5);
             deltaVector.normalize().multiplyScalar(offset);
 
             this.player.position.add(deltaVector);
 
-            deltaVector.normalize();
-            this.player.velocity.addScaledVector(deltaVector, -deltaVector.dot(this.player.velocity));
-        }
-
-        if (this.isOnGround) {
-            this.player.velocity.y = 0;
+            deltaVector.normalize()
+            const dot = deltaVector.dot(this.player.velocity);
+            if (dot < 0) {
+                this.player.velocity.addScaledVector(deltaVector, -dot);
+            }
         }
     }
 }

@@ -20,7 +20,7 @@ export class CameraSystem extends System {
     // Player camera settings
     private readonly cameraHeight = 1.5;
     private readonly cameraDistance = 5;
-    private readonly cameraResetSpeed = 0.5;
+    private readonly cameraResetSpeed = 0.3;
     private readonly cameraFollowSpeed = 3;
     private cameraRotationY = 0;
     
@@ -79,22 +79,21 @@ export class CameraSystem extends System {
         if (!this.player) return;
         
         // current direction of player
-        this.cameraPosition.copy(this.engine.camera.position);
-        this.engine.camera.getWorldDirection(this.cameraDirection);
         this.player.getWorldDirection(this.playerDirection);
-
-        const resetT = 1 - Math.exp(-this.cameraResetSpeed * delta);
         const playerRotationY =  Math.atan2(-this.playerDirection.x, -this.playerDirection.z);
-        this.cameraRotationY = lerp(this.cameraRotationY, playerRotationY, resetT);
-
-        const newPosition = this.tempVecA;
-        newPosition.set(
-            this.player.position.x + Math.sin(this.cameraRotationY) * this.cameraDistance,
-            this.player.position.y + this.cameraHeight,
-            this.player.position.z + Math.cos(this.cameraRotationY) * this.cameraDistance
-        );
+        
+        const rotateT = 1 - Math.exp(-this.cameraResetSpeed * delta);
+        this.cameraRotationY = lerp(this.cameraRotationY, playerRotationY, rotateT);
 
         const followT = 1 - Math.exp(-this.cameraFollowSpeed * delta);
+        const newPosition = this.tempVecA;
+        newPosition.copy(this.player.position);
+        newPosition.x += Math.sin(this.cameraRotationY) * this.cameraDistance;
+        newPosition.y += this.cameraHeight;
+        newPosition.z += Math.cos(this.cameraRotationY) * this.cameraDistance;
+
+        // newPosition.lerp(this.player.position, followT);
+
         this.engine.camera.position.lerp(newPosition, followT);
         this.engine.camera.lookAt(this.player.position);
     }
