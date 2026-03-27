@@ -4,6 +4,7 @@ import { Engine } from './engine.js';
 import { Entity, EntityType } from '../entities/entity.js';
 import { Player, Interactable, NPC } from '../entities/index.js';
 import { EventEmitter } from '../utils/event-emitter.js';
+import { clamp } from 'three/src/math/MathUtils.js';
 
 export interface PhysicsEvents {
     // true when entering collision, false when exiting
@@ -81,6 +82,10 @@ export class Physics extends EventEmitter<PhysicsEvents> {
         } else {
             this.isOnGround = false;
             this.player.velocity.y -= 9.8 * delta * this.player.weight;
+
+            // clamp
+            const maxFallSpeed = this.player.capsule.radius / delta;
+            this.player.velocity.y = clamp(this.player.velocity.y, -maxFallSpeed, maxFallSpeed);
         }
     }
 
