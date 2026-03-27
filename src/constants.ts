@@ -22,8 +22,8 @@ export enum Layers {
 }
 
 // export const PlayerSpawnPosition = new THREE.Vector3(0, 5.0, -10.0);
-export const PlayerSpawnPosition = Object.freeze(new THREE.Vector3(-13, 25, -31));
-export const PlayerSpawnDirection = Object.freeze(new THREE.Vector3(0, 0, 1));
+export const PlayerSpawnPosition = Object.freeze(new THREE.Vector3(-13, 13, -31));
+export const PlayerSpawnDirection = Object.freeze(new THREE.Vector3(0, 0, -1));
 
 export const LilTaoSpawnPosition = Object.freeze(new THREE.Vector3(11.5, 4.35, -15));
 export const LilTaoDialogueBubbleOffset = Object.freeze(new THREE.Vector3(0.4, 0.9, 0));

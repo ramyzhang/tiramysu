@@ -3,7 +3,6 @@ import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Player } from '../entities/player.js';
 import { PlayerSpawnDirection, PlayerSpawnPosition } from '../constants.js';
-import { lerp } from 'three/src/math/MathUtils.js';
 
 export enum CameraMode {
     Player = 'player',
@@ -14,8 +13,6 @@ export class CameraSystem extends System {
     private player: Player | null = null;
     private currentMode: CameraMode = CameraMode.Free;
     private playerDirection: THREE.Vector3 = new THREE.Vector3();
-    private cameraPosition: THREE.Vector3 = new THREE.Vector3();
-    private cameraDirection: THREE.Vector3 = new THREE.Vector3();
 
     // Player camera settings
     private readonly cameraHeight = 1.5;
@@ -27,7 +24,7 @@ export class CameraSystem extends System {
     // Free camera settings
     private freeCameraSpeed = 10.0;
     private freeCameraPanSpeed = 2.0; // Rotation speed for Q/E panning
-    private freeCameraPosition = new THREE.Vector3(0, 8, 25);
+    private freeCameraPosition = new THREE.Vector3(-22, 10, -14);
     private freeCameraRotationY = 0;
     private lastCKeyState: boolean = false;
 
@@ -78,22 +75,22 @@ export class CameraSystem extends System {
     private updatePlayerCamera(delta: number): void {
         if (!this.player) return;
         
-        // current direction of player
         this.player.getWorldDirection(this.playerDirection);
         const playerRotationY =  Math.atan2(-this.playerDirection.x, -this.playerDirection.z);
         
+        // Only reset camera angle toward player when there's no movement input
         const rotateT = 1 - Math.exp(-this.cameraResetSpeed * delta);
-        this.cameraRotationY = lerp(this.cameraRotationY, playerRotationY, rotateT);
+        let angleDiff = playerRotationY - this.cameraRotationY;
+        angleDiff = angleDiff - Math.round(angleDiff / (Math.PI * 2)) * (Math.PI * 2);
+        this.cameraRotationY += angleDiff * rotateT;
 
-        const followT = 1 - Math.exp(-this.cameraFollowSpeed * delta);
         const newPosition = this.tempVecA;
         newPosition.copy(this.player.position);
         newPosition.x += Math.sin(this.cameraRotationY) * this.cameraDistance;
         newPosition.y += this.cameraHeight;
         newPosition.z += Math.cos(this.cameraRotationY) * this.cameraDistance;
 
-        // newPosition.lerp(this.player.position, followT);
-
+        const followT = 1 - Math.exp(-this.cameraFollowSpeed * delta);
         this.engine.camera.position.lerp(newPosition, followT);
         this.engine.camera.lookAt(this.player.position);
     }

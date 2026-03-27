@@ -87,9 +87,9 @@ export class Engine {
 
         const delta = this.clock.getDelta();
 
-        // update systems
-        this.world.update(delta);
+        // update systems — physics must run first so camera reads final resolved positions
         this.physics.update(delta);
+        this.world.update(delta);
         
         // render to pixelated render target
         if (this.renderTarget && this.screenQuad) {
