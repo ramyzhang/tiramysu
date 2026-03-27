@@ -3,6 +3,7 @@ import { System } from './system.js';
 import { Engine } from '../engine/engine.js';
 import { Player } from '../entities/player.js';
 import { PlayerSpawnDirection, PlayerSpawnPosition } from '../constants.js';
+import { lerp } from 'three/src/math/MathUtils.js';
 
 export enum CameraMode {
     Player = 'player',
@@ -80,9 +81,7 @@ export class CameraSystem extends System {
         
         // Only reset camera angle toward player when there's no movement input
         const rotateT = 1 - Math.exp(-this.cameraResetSpeed * delta);
-        let angleDiff = playerRotationY - this.cameraRotationY;
-        angleDiff = angleDiff - Math.round(angleDiff / (Math.PI * 2)) * (Math.PI * 2);
-        this.cameraRotationY += angleDiff * rotateT;
+        this.cameraRotationY = lerp(this.cameraRotationY, playerRotationY, rotateT);
 
         const newPosition = this.tempVecA;
         newPosition.copy(this.player.position);
