@@ -80,7 +80,7 @@ export class Physics extends EventEmitter<PhysicsEvents> {
         this.player.velocity.y -= 9.8 * delta * (this.player as Player).weight;
     }
 
-    checkCollisions(): void {  // Return void, modify tempLine directly
+    checkCollisions(): void { 
         this.tempMat.copy(this.environment!.matrixWorld).invert();
         this.tempLine.copy((this.player as Player).capsule.lineSegment)
             .applyMatrix4(this.player!.matrixWorld)
@@ -89,6 +89,7 @@ export class Physics extends EventEmitter<PhysicsEvents> {
         this.tempAABB.setFromObject(this.player!);
         const radius = (this.player as Player).capsule.radius;
     
+        // environmental collisions (i.e. the terrain)
         (this.environment! as THREE.Mesh).geometry.boundsTree?.shapecast({
             intersectsBounds: box => box.intersectsBox(this.tempAABB),
     
@@ -109,8 +110,7 @@ export class Physics extends EventEmitter<PhysicsEvents> {
         });
 
         // Check for interactable collisions
-        // Note: We still iterate registry for interactables since they can be dynamically added
-        // (like dialogue bubbles). For a small game, this is fine.
+        // Note: We iterate registry for interactables since they can be dynamically added (like dialogue bubbles)
         for (const e of this.engine.entityRegistry.getEntities()) {
             if (e.entityType === EntityType.Interactable || e.entityType === EntityType.NPC) {
                 const entity = e as Interactable | NPC;
@@ -150,14 +150,24 @@ export class Physics extends EventEmitter<PhysicsEvents> {
     
         const hadCollision = deltaVector.length() > 0.005;
 
-        // Only update ground state if we had a collision
-        // raycast down from the player's position to check if we are on the ground
-        this.raycaster.set(this.player.position, this.player.position.clone().add(new THREE.Vector3(0, -3, 0)));
-        const intersects = this.raycaster.intersectObjects(this.environment.children!);
-        if (intersects.length > 0) {
+        // Raycast straight down from the player's position to check if we are on the ground
+        this.raycaster.set(this.player.position, new THREE.Vector3(0, -1, 0));
+
+        const capsule = (this.player as Player).capsule;
+        const dist = capsule.lineSegment.distance() + capsule.radius;
+        const intersects = this.raycaster.intersectObject(this.environment);
+        if (intersects.length > 0 && intersects[0].distance < (dist + 0.2)) {
             this.isOnGround = true;
         } else {
             this.isOnGround = false;
+        }
+
+        // Always zero out downward velocity when grounded, regardless of collision threshold.
+        // Without this, gravity accumulates across frames where the correction is too small
+        // to count as a collision (< 0.005), causing the velocity to alternate between 0 and
+        // growing negative values each frame.
+        if (this.isOnGround && this.player.velocity && this.player.velocity.y < 0) {
+            this.player.velocity.y = 0;
         }
 
         if (hadCollision) {
@@ -166,13 +176,9 @@ export class Physics extends EventEmitter<PhysicsEvents> {
 
             this.player.position.add(deltaVector);
 
-            if (this.player.velocity) {
-                if (!this.isOnGround) {
-                    deltaVector.normalize();
-                    this.player.velocity.addScaledVector(deltaVector, -deltaVector.dot(this.player.velocity));
-                } else {
-                    this.player.velocity.y = 0;
-                }
+            if (this.player.velocity && !this.isOnGround) {
+                deltaVector.normalize();
+                this.player.velocity.addScaledVector(deltaVector, -deltaVector.dot(this.player.velocity));
             }
         }
     }

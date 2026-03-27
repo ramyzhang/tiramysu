@@ -51,8 +51,6 @@ export class CameraSystem extends System {
             this.freeCameraPosition.copy(this.engine.camera.position);
             this.freeCameraRotationY = this.engine.camera.rotation.y;
         }
-        
-        console.log('Camera mode:', this.currentMode);
     }
 
     update(delta: number): void {
@@ -135,8 +133,7 @@ export class CameraSystem extends System {
             this.freeCameraPosition.add(moveVector);
         }
 
-        // Apply only yaw rotation to camera (no pitch/roll for Q/E, so x and z are unchanged)
-        this.engine.camera.rotation.set(0, this.freeCameraRotationY, 0);
+        this.engine.camera.rotation.y = this.freeCameraRotationY;
         this.engine.camera.position.copy(this.freeCameraPosition);
     }
 }

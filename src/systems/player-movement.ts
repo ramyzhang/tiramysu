@@ -21,7 +21,6 @@ export class PlayerMovementSystem extends System {
     }
 
     update(delta: number): void {
-    
         const input = this.engine.input;
         this.inputDirection.copy(input.pointerPosition);
 
@@ -37,8 +36,7 @@ export class PlayerMovementSystem extends System {
             (dialogueSystem && dialogueSystem.isActive())) {
             // Player is interacting or in dialogue, don't process movement
             if (this.player.velocity) {
-                this.player.velocity.x = 0;
-                this.player.velocity.z = 0;
+                this.player.velocity = new THREE.Vector3(); // zero out
             }
             return;
         }
