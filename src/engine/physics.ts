@@ -4,7 +4,8 @@ import { Engine } from './engine.js';
 import { Entity, EntityType } from '../entities/entity.js';
 import { Player, Interactable, NPC } from '../entities/index.js';
 import { EventEmitter } from '../utils/event-emitter.js';
-import { clamp } from 'three/src/math/MathUtils.js';
+import { GlobalDown } from '../constants.js';
+
 
 export interface PhysicsEvents {
     // true when entering collision, false when exiting
@@ -28,9 +29,11 @@ export class Physics extends EventEmitter<PhysicsEvents> {
     private tempMat: THREE.Matrix4 = new THREE.Matrix4();
     private tempAABB: THREE.Box3 = new THREE.Box3();
     private tempSphere: THREE.Sphere = new THREE.Sphere();
+    private playerWorldAABB: THREE.Box3 = new THREE.Box3();
 
     private raycaster: THREE.Raycaster;
     private collidingEntities: Set<Entity> = new Set();
+    private gravityFrameCount: number = 0;
 
     public isOnGround: boolean = false;
 
@@ -61,12 +64,24 @@ export class Physics extends EventEmitter<PhysicsEvents> {
         this.gravity(delta);
 
         if (this.player.velocity) {
-            this.player.position.addScaledVector(this.player.velocity, delta);
+            // Clamp displacement to capsule radius to prevent tunneling through thin geometry
+            const displacement = this.player.velocity.length() * delta;
+            const maxDisplacement = this.player.capsule.radius;
+            const scale = displacement > maxDisplacement ? maxDisplacement / displacement : 1;
+            this.player.position.addScaledVector(this.player.velocity, delta * scale);
         }
-        this.player.updateMatrixWorld(); // must refresh before collision detection reads matrixWorld
+        this.player.updateMatrixWorld();
 
-        this.checkCollisions();
+        // Build player AABB once from capsule — reused by both collision methods
+        const r = this.player.capsule.radius;
+        this.tempVecA.copy(this.player.capsule.start).applyMatrix4(this.player.matrixWorld);
+        this.tempVecB.copy(this.player.capsule.end).applyMatrix4(this.player.matrixWorld);
+        this.playerWorldAABB.setFromPoints([this.tempVecA, this.tempVecB]);
+        this.playerWorldAABB.expandByScalar(r);
+
+        this.checkGeometryCollisions();
         this.resolveCollisions();
+        this.checkInteractableCollisions();
     }
 
     private gravity(delta: number): void {
@@ -74,30 +89,34 @@ export class Physics extends EventEmitter<PhysicsEvents> {
             this.player.velocity = new THREE.Vector3(0, 0, 0);
         }
 
-        this.raycaster.set(this.player.position, new THREE.Vector3(0, -1, 0));
+        // When already grounded, only re-check every other frame — halves raycast cost
+        // in the common case. Always check when airborne to catch landings immediately.
+        this.gravityFrameCount++;
+        if (this.isOnGround && this.gravityFrameCount % 2 !== 0) {
+            this.player.velocity.y = 0;
+            return;
+        }
+
+        this.raycaster.set(this.player.position, GlobalDown);
         const intersects = this.raycaster.intersectObjects([this.environment]);
 
         if (intersects.length > 0 && intersects[0].distance <= this.playerHalfHeight + 0.1) {
             this.isOnGround = true;
+            this.player.velocity.y = 0;
         } else {
             this.isOnGround = false;
             this.player.velocity.y -= 9.8 * delta * this.player.weight;
-
-            // clamp
-            const maxFallSpeed = this.player.capsule.radius / delta;
-            this.player.velocity.y = clamp(this.player.velocity.y, -maxFallSpeed, maxFallSpeed);
         }
     }
 
-    private checkCollisions(): void {
+    private checkGeometryCollisions(): void {
         this.tempMat.copy(this.environment.matrixWorld).invert();
         this.tempLine
             .set(this.player.capsule.start, this.player.capsule.end)
             .applyMatrix4(this.player.matrixWorld)
             .applyMatrix4(this.tempMat);
 
-        this.tempAABB.setFromObject(this.player);
-        this.tempAABB.applyMatrix4(this.tempMat);
+        this.tempAABB.copy(this.playerWorldAABB).applyMatrix4(this.tempMat);
         const radius = this.player.capsule.radius;
 
         this.environment.geometry.boundsTree?.shapecast({
@@ -116,8 +135,9 @@ export class Physics extends EventEmitter<PhysicsEvents> {
                 }
             }
         });
+    }
 
-        // Interactables can be dynamically added (e.g. dialogue bubbles), so we check the registry each frame
+    private checkInteractableCollisions(): void {
         for (const e of this.engine.entityRegistry.getEntities()) {
             if (e.entityType !== EntityType.Interactable && e.entityType !== EntityType.NPC) continue;
 
@@ -125,9 +145,8 @@ export class Physics extends EventEmitter<PhysicsEvents> {
             if (!entity.sphere) continue;
 
             this.tempSphere.copy(entity.sphere).applyMatrix4(entity.matrixWorld);
-            this.tempAABB.setFromObject(this.player);
 
-            const isColliding = this.tempAABB.intersectsSphere(this.tempSphere);
+            const isColliding = this.playerWorldAABB.intersectsSphere(this.tempSphere);
             const wasColliding = this.collidingEntities.has(entity);
 
             if (isColliding && !wasColliding) {
@@ -149,8 +168,9 @@ export class Physics extends EventEmitter<PhysicsEvents> {
         const deltaVector = this.tempVecB;
         deltaVector.subVectors(newPosition, this.player.position);
 
-        if (deltaVector.length() > 0.005) {
-            const offset = Math.max(0, deltaVector.length() - 1e-5);
+        const len = deltaVector.length();
+        if (len > 0.005) {
+            const offset = Math.max(0, len - 1e-5);
             deltaVector.normalize().multiplyScalar(offset);
 
             this.player.position.add(deltaVector);

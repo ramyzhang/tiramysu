@@ -44,4 +44,5 @@ export const TanghuluScaleRange = Object.freeze({ min: 0.7, max: 1.4 });
 export const TanghuluMaxTilt = 0.15; // radians
 
 export const GlobalUp = Object.freeze(new THREE.Vector3(0, 1, 0));
+export const GlobalDown = Object.freeze(new THREE.Vector3(0, -1, 0));
 export const GlobalRight = Object.freeze(new THREE.Vector3(1, 0, 0));

@@ -34,6 +34,9 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
     private raycaster: THREE.Raycaster = new THREE.Raycaster();
     private mouse: THREE.Vector2 = new THREE.Vector2();
 
+    // Cached list of only interactable/NPC entities for raycasting
+    private interactableEntities: Entity[] = [];
+
     // Interaction state
     private collidingInteractables: Set<Interactable> = new Set();
     private hoveredInteractable: Interactable | null = null;
@@ -74,6 +77,12 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
         });
     }
 
+    public cacheInteractables(): void {
+        this.interactableEntities = this.engine.entityRegistry.getEntities().filter(
+            e => e.entityType === EntityType.Interactable || e.entityType === EntityType.NPC
+        );
+    }
+
     public isCurrentlyInteracting(): boolean {
         return this.isInteracting;
     }
@@ -90,7 +99,7 @@ export class InteractionSystem extends EventEmitter<InteractionEvents> {
 
         this.mouse.copy(input.pointerPosition);
         this.raycaster.setFromCamera(this.mouse, this.engine.camera);
-        const intersects = this.raycaster.intersectObjects(this.engine.entityRegistry.getEntities());
+        const intersects = this.raycaster.intersectObjects(this.interactableEntities);
 
         this.updateHoverState(intersects);
         this.handleClickInteraction(input);

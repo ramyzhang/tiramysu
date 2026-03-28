@@ -80,17 +80,7 @@ export class CameraSystem extends System {
         
         // Only reset camera angle toward player when there's no movement input
         const rotateT = 1 - Math.exp(-this.cameraResetSpeed * delta);
-
-        // Build quaternions from Y-axis rotations only
-        const qFrom = new THREE.Quaternion().setFromAxisAngle(GlobalUp, this.cameraRotationY);
-        const qTo   = new THREE.Quaternion().setFromAxisAngle(GlobalUp, playerRotationY);
-
-        // Slerp (t = 0..1)
-        const qCurrent = qFrom.clone().slerp(qTo, rotateT);
-
-        // Apply to your object — only Y is affected
-        const euler = new THREE.Euler().setFromQuaternion(qCurrent, 'YXZ');
-        this.cameraRotationY = euler.y;
+        this.cameraRotationY = THREE.MathUtils.lerp(this.cameraRotationY, playerRotationY, rotateT);
 
         const newPosition = this.tempVec;
         newPosition.copy(this.player.position);

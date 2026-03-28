@@ -21,6 +21,10 @@ export class CameraOcclusionSystem extends System {
     
     private tempVecA: THREE.Vector3 = new THREE.Vector3();
     private tempVecB: THREE.Vector3 = new THREE.Vector3();
+    private tempVecC: THREE.Vector3 = new THREE.Vector3();
+
+    private frameCount: number = 0;
+    private lastBlockingMeshes: Set<THREE.Mesh> = new Set();
     
     // Settings
     private readonly transparencyAlpha: number = 0.2; // Alpha value when transparent
@@ -120,36 +124,32 @@ export class CameraOcclusionSystem extends System {
      * Updates the system, checking for occluding meshes and updating their transparency.
      */
     update(delta: number): void {
+        // Raycast every other frame — occlusion doesn't need per-frame precision
+        this.frameCount++;
+        if (this.frameCount % 2 === 0) {
+            const cameraPos = this.tempVecA.copy(this.engine.camera.position);
+            // tempVecB = player position, then offset towards camera using tempVecC for direction
+            this.tempVecB.copy(this.player.position);
+            this.tempVecC.subVectors(this.tempVecB, cameraPos).normalize();
+            this.tempVecB.addScaledVector(this.tempVecC, -this.raycastOffset);
 
-        // Get camera and player positions
-        const cameraPos = this.tempVecA.copy(this.engine.camera.position);
-        const playerPos = this.tempVecB.copy(this.player.position);
-        
-        // Add a small offset to player position to avoid hitting the player mesh itself
-        // Offset slightly towards the camera to ensure we detect meshes right in front of player
-        const cameraToPlayer = new THREE.Vector3().subVectors(playerPos, cameraPos);
-        const direction = cameraToPlayer.normalize();
-        const offsetPlayerPos = playerPos.clone().sub(direction.multiplyScalar(this.raycastOffset));
+            this.raycaster.set(cameraPos, this.tempVecB);
+            const intersections = this.raycaster.intersectObjects(this.environmentMeshes, false);
 
-        this.raycaster.set(cameraPos, offsetPlayerPos);
-        
-        const intersections = this.raycaster.intersectObjects(this.environmentMeshes, false);
-        
-        // Create a set of meshes that are blocking the view
-        const blockingMeshes = new Set<THREE.Mesh>();
-        
-        for (const intersection of intersections) {
-            if (intersection.object instanceof THREE.Mesh) {
-                blockingMeshes.add(intersection.object);
+            this.lastBlockingMeshes.clear();
+            for (const intersection of intersections) {
+                if (intersection.object instanceof THREE.Mesh) {
+                    this.lastBlockingMeshes.add(intersection.object);
+                }
             }
         }
 
-        // Update transparency for all environment meshes
+        // Material fading still runs every frame for smooth transitions
         for (const mesh of this.environmentMeshes) {
             const materialData = this.meshMaterialData.get(mesh);
             if (!materialData) continue;
 
-            const isBlocking = blockingMeshes.has(mesh);
+            const isBlocking = this.lastBlockingMeshes.has(mesh);
             const currentMaterial = mesh.material;
             const targetMaterial = isBlocking ? materialData.transparentMaterial : materialData.originalMaterial;
 

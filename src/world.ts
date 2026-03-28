@@ -72,6 +72,7 @@ export class World {
 
         this.cameraOcclusionSystem = new CameraOcclusionSystem(this.engine);
         this.cameraOcclusionSystem.init(this.player, this.tiramysu);
+        this.interactionSystem.cacheInteractables();
         
         this.particleSystem = new ParticleSystem(this.engine);
     }
